@@ -41,6 +41,10 @@ class EventBridge:
             "sandboxId": sandbox_id,
             "outcome": outcome,
         })
+        await self._call_mutation("betting:settle", {
+            "sandboxId": sandbox_id,
+            "outcome": outcome,
+        })
 
     async def update_live_url(
         self, sandbox_id: str, live_url: str, share_url: str = ""

@@ -1,3 +1,6 @@
 httpx
 daytona
 python-dotenv
+fastapi
+uvicorn[standard]
+pydantic
