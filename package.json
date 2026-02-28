@@ -1,0 +1,9 @@
+{
+  "name": "agent-arena",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "browser-use-convex-component": "^0.1.1",
+    "convex": "^1"
+  }
+}
