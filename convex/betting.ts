@@ -1,0 +1,124 @@
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const getPool = query({
+  args: { sandboxId: v.id("sandboxes") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("bettingPools")
+      .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+      .first();
+  },
+});
+
+export const getBets = query({
+  args: { sandboxId: v.id("sandboxes") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("bets")
+      .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+      .collect();
+  },
+});
+
+export const getUserBets = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("bets")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+  },
+});
+
+export const placeBet = mutation({
+  args: {
+    sandboxId: v.id("sandboxes"),
+    userId: v.id("users"),
+    amount: v.number(),
+    position: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const pool = await ctx.db
+      .query("bettingPools")
+      .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+      .first();
+
+    if (!pool || !pool.bettingOpen) {
+      throw new Error("Betting is closed for this sandbox");
+    }
+
+    const user = await ctx.db.get(args.userId);
+    if (!user || user.balance < args.amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    await ctx.db.patch(args.userId, {
+      balance: user.balance - args.amount,
+    });
+
+    const poolUpdate =
+      args.position === "yes"
+        ? { yesTotal: pool.yesTotal + args.amount }
+        : { noTotal: pool.noTotal + args.amount };
+    await ctx.db.patch(pool._id, poolUpdate);
+
+    const newTotal = pool.yesTotal + pool.noTotal + args.amount;
+    const winningPool =
+      args.position === "yes"
+        ? pool.yesTotal + args.amount
+        : pool.noTotal + args.amount;
+
+    await ctx.db.insert("bets", {
+      sandboxId: args.sandboxId,
+      userId: args.userId,
+      amount: args.amount,
+      position: args.position,
+      oddsAtPlacement: newTotal / winningPool,
+      settled: false,
+      placedAt: Date.now(),
+    });
+  },
+});
+
+export const settle = mutation({
+  args: {
+    sandboxId: v.id("sandboxes"),
+    outcome: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const pool = await ctx.db
+      .query("bettingPools")
+      .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+      .first();
+    if (!pool) return;
+
+    const totalPool = pool.yesTotal + pool.noTotal;
+    const winningPosition = args.outcome === "success" ? "yes" : "no";
+    const winningPool =
+      winningPosition === "yes" ? pool.yesTotal : pool.noTotal;
+
+    const bets = await ctx.db
+      .query("bets")
+      .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+      .collect();
+
+    for (const bet of bets) {
+      const payout =
+        bet.position === winningPosition
+          ? (bet.amount / winningPool) * totalPool
+          : 0;
+
+      await ctx.db.patch(bet._id, { settled: true, payout });
+
+      if (payout > 0) {
+        const user = await ctx.db.get(bet.userId);
+        if (user) {
+          await ctx.db.patch(bet.userId, { balance: user.balance + payout });
+        }
+      }
+    }
+
+    await ctx.db.patch(pool._id, { bettingOpen: false });
+  },
+});

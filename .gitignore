@@ -33,6 +33,7 @@ build/
 .convex/
 
 # IDE
+.cursor/
 .vscode/
 .idea/
 *.swp
