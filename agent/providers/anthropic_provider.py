@@ -1,4 +1,4 @@
-"""Anthropic Claude provider — vision + reasoning."""
+"""Anthropic Claude provider — uses native tool use API for structured actions."""
 
 import os
 from typing import Any
@@ -6,16 +6,8 @@ from typing import Any
 import anthropic
 
 from model_router import BaseProvider, Decision
-
-
-SYSTEM_PROMPT = """You are an autonomous agent pursuing a goal. Analyze the screenshot and context, then decide your next action.
-
-Respond with JSON:
-{
-  "reasoning": "your thought process",
-  "action_type": "browser" | "email" | "payment",
-  "action": { ... action details ... }
-}"""
+from prompts import SYSTEM_PROMPT, build_user_prompt
+from tools.schemas import to_anthropic_tools
 
 
 class AnthropicProvider(BaseProvider):
@@ -24,62 +16,46 @@ class AnthropicProvider(BaseProvider):
         self.model_id = model_id
 
     async def think(self, goal: str, screenshot: str, **context: Any) -> Decision:
-        prompt = _build_prompt(goal, **context)
+        prompt = build_user_prompt(goal, **context)
+
+        content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+        if screenshot:
+            content.insert(0, {
+                "type": "image",
+                "source": {"type": "base64", "media_type": "image/png", "data": screenshot},
+            })
 
         response = await self.client.messages.create(
             model=self.model_id,
             max_tokens=4096,
             system=SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {"type": "base64", "media_type": "image/png", "data": screenshot},
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }
-            ],
+            tools=to_anthropic_tools(),
+            messages=[{"role": "user", "content": content}],
         )
 
-        return _parse_response(response.content[0].text)
+        return _parse_tool_use(response)
 
 
-def _build_prompt(goal: str, **context: Any) -> str:
-    parts = [f"GOAL: {goal}"]
-    if context.get("wallet_balance") is not None:
-        parts.append(f"WALLET BALANCE: ${context['wallet_balance']:.2f}")
-    if context.get("emails"):
-        parts.append(f"RECENT EMAILS: {len(context['emails'])} messages")
-    if context.get("memory"):
-        parts.append(f"MEMORY:\n{context['memory']}")
-    if context.get("user_prompts"):
-        prompts = [p["promptText"] for p in context["user_prompts"]]
-        parts.append(f"USER SUGGESTIONS: {prompts}")
-    if context.get("action_history"):
-        recent = context["action_history"][-5:]
-        parts.append(f"RECENT ACTIONS: {recent}")
-    return "\n\n".join(parts)
+def _parse_tool_use(response: Any) -> Decision:
+    """Extract the tool call from Anthropic's response content blocks."""
+    reasoning_parts: list[str] = []
+    tool_name = "finish_reasoning"
+    tool_input: dict[str, Any] = {}
 
+    for block in response.content:
+        if block.type == "text":
+            reasoning_parts.append(block.text)
+        elif block.type == "tool_use":
+            tool_name = block.name
+            tool_input = block.input
 
-def _parse_response(text: str) -> Decision:
-    import json
-
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        return Decision(
-            reasoning=text,
-            action_type="browser",
-            action={"type": "wait", "reason": "Failed to parse response"},
-            cost=0.01,
-        )
+    reasoning = " ".join(reasoning_parts)
+    if tool_name == "finish_reasoning":
+        reasoning = tool_input.get("reasoning", reasoning)
 
     return Decision(
-        reasoning=data.get("reasoning", ""),
-        action_type=data.get("action_type", "browser"),
-        action=data.get("action", {}),
+        reasoning=reasoning,
+        action_type=tool_name,
+        action=tool_input,
         cost=0.01,
     )

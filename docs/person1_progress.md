@@ -1,14 +1,14 @@
-# Person 1 Progress — Agent Runtime (Track A) + Frontend
+# Progress — Agent Runtime + Frontend + Orchestration
 
-**Owner:** Sissi
-**Directories:** `agent/`, `apps/web/`
-**Languages:** Python (agent runtime), TypeScript (frontend)
+**Owner:** Sissi (solo — all tracks)
+**Directories:** `agent/`, `apps/web/`, `orchestrator/`, `convex/`, `scripts/`
+**Languages:** Python (agent runtime + orchestrator), TypeScript (frontend + Convex)
 
 ---
 
 ## Summary
 
-All Track A agent integrations and the full frontend are implemented. The agent runtime can run end-to-end with real SDK calls (Browser Use, AgentMail, Paylocus, Supermemory) and push events to Convex via the event bridge. The frontend has Convex real-time subscriptions, a dark-themed UI, and all interactive components wired up.
+Full pipeline is implemented end-to-end: agent runtime with native tool use APIs (Anthropic, OpenAI, Gemini), Browser Use high-level task API with live_url streaming, Daytona sandbox isolation, Convex real-time backend, and a dark-themed Next.js frontend. All sponsor tools are integrated.
 
 ---
 
@@ -18,13 +18,19 @@ All Track A agent integrations and the full frontend are implemented. The agent 
 
 | File | Status | What Changed |
 |------|--------|--------------|
-| `agent/tools/browser.py` | **Complete** | Integrated `browser-use-sdk` (`AsyncBrowserUse`). Creates persistent cloud sessions, runs tasks for navigate/click/type/scroll, captures screenshots as base64 PNG via task steps. |
-| `agent/tools/email.py` | **Complete** | Integrated `agentmail` SDK (`AsyncAgentMail`). Checks inbox threads, sends emails with HTML+text, counts positive replies using keyword signal detection. |
-| `agent/tools/payments.py` | **Complete** | Integrated Locus/Paylocus via `httpx` REST client (no published Python SDK). Gets wallet balance, executes USDC transfers, fetches transaction history. Includes cached balance fallback. |
-| `agent/memory.py` | **Complete** | Integrated `supermemory` SDK. Stores learnings with `container_tag` (sandbox ID) and metadata. Searches with hybrid mode (memories + document chunks). Gracefully degrades if API key is missing. |
-| `agent/goal_verifier.py` | **Complete** | Implemented all 4 goal types: follower count (Twitter via social API + Nitter scraping fallback), revenue (via Paylocus transaction history), view count (HTML scraping), positive email replies (via AgentMail). |
-| `agent/agent_runner.py` | **Complete** | Rewired the full agent loop: lazily connects to EventBridge when `CONVEX_URL`/`CONVEX_DEPLOY_KEY` are set (falls back to console logging). Pushes typed events (`reasoning`, `email`, `payment`). Fetches pending user prompts and stores them in Supermemory. Laminar `@observe` tracing on the reasoning step. Proper cleanup of browser/payment resources on exit. |
-| `agent/requirements.txt` | **Updated** | Changed `browser-use` → `browser-use-sdk`, `laminar` → `lmnr`, added `Pillow`. |
+| `agent/tools/browser.py` | **Rewritten (v2)** | Uses Browser Use high-level task API. Agent describes tasks in natural language. Sessions expose `live_url` + `share_url` for real-time streaming. |
+| `agent/tools/schemas.py` | **New** | Shared tool definitions for native tool use. Defines `browser_task`, `send_email`, `make_payment`, `finish_reasoning` with per-provider converters. |
+| `agent/tools/email.py` | **Complete** | Integrated `agentmail` SDK (`AsyncAgentMail`). |
+| `agent/tools/payments.py` | **Complete** | Integrated Locus/Paylocus via `httpx` REST client. |
+| `agent/prompts.py` | **New** | Shared system prompt and `build_user_prompt()` extracted from all 3 providers. |
+| `agent/memory.py` | **Complete** | Integrated `supermemory` SDK with semantic search. |
+| `agent/goal_verifier.py` | **Complete** | All 4 goal types implemented. |
+| `agent/model_router.py` | **Rewritten (v2)** | Added `get_fallback_chain()` for automatic provider failover on rate limits. |
+| `agent/providers/anthropic_provider.py` | **Rewritten (v2)** | Uses native Anthropic `tools` parameter — no JSON parsing needed. |
+| `agent/providers/openai_provider.py` | **Rewritten (v2)** | Uses native OpenAI `tools` parameter with `tool_choice="required"`. |
+| `agent/providers/gemini_provider.py` | **Rewritten (v2)** | Uses native Gemini `tools` parameter with `FunctionDeclaration`. |
+| `agent/agent_runner.py` | **Rewritten (v2)** | Fallback chain retry loop, live_url push to Convex, loop detection (3+ identical actions), try/except around all action execution. |
+| `agent/requirements.txt` | **Updated** | Added `daytona`, `python-dotenv`. |
 
 ### Frontend (`apps/web/`)
 
@@ -52,15 +58,39 @@ All Track A agent integrations and the full frontend are implemented. The agent 
 
 ---
 
-## What's NOT Done (and who owns it)
+### Orchestrator (`orchestrator/`)
 
-| Item | Owner | Notes |
-|------|-------|-------|
-| Convex deployment + URL | **Iana (Track B)** | Frontend needs `NEXT_PUBLIC_CONVEX_URL` to connect. |
-| Event bridge HTTP calls | **Iana (Track B)** | ✅ Done as of latest pull from main. |
-| Daytona sandbox manager | **Iana (Track B)** | Needed for sandbox lifecycle. |
-| User auth / accounts | **Iana (Track B)** | Betting and prompts currently use placeholder user IDs. |
-| Convex `_generated/` types | **Iana (Track B)** | Need `npx convex dev` to generate. Frontend uses `anyApi` stubs until then. |
+| File | Status | What Changed |
+|------|--------|--------------|
+| `orchestrator/sandbox_manager.py` | **Rewritten (v2)** | Full Daytona SDK integration: creates sandbox, uploads all agent files, installs deps, starts agent in background. Includes `get_agent_logs()`, `is_agent_running()`, `destroy_sandbox()`. |
+| `orchestrator/launch_sandbox.py` | **New** | End-to-end CLI: creates Convex record, Daytona sandbox, uploads agent code, starts agent. Single command to launch a demo. |
+| `orchestrator/event_bridge.py` | **Updated** | Added `update_live_url()` for pushing Browser Use live_url to Convex. |
+| `orchestrator/requirements.txt` | **New** | `httpx`, `daytona`, `python-dotenv`. |
+
+### Convex Backend (`convex/`)
+
+| File | Status | What Changed |
+|------|--------|--------------|
+| `convex/schema.ts` | **Updated** | Added `liveUrl` and `shareUrl` (optional strings) to sandboxes table. |
+| `convex/sandboxes.ts` | **Updated** | Added `updateLiveUrl` mutation for pushing live browser stream URLs. |
+
+### Scripts + Docs
+
+| File | Status | What Changed |
+|------|--------|--------------|
+| `scripts/seed_convex.py` | **New** | Seeds Convex with test user and demo sandboxes (3 models competing on same goal). |
+| `docs/research_notes.md` | **New** | Documents architectural patterns from AutoGPT, SuperAGI, Quoroom, Trading repo, Claude Agent SDK. |
+
+---
+
+## What's NOT Done
+
+| Item | Notes |
+|------|-------|
+| Convex deployment | Need to run `npx convex dev` to deploy schema + functions. |
+| Convex `_generated/` types | Frontend uses `anyApi` stubs until codegen runs. |
+| User auth / accounts | Betting and prompts use placeholder user IDs. |
+| Locus/Paylocus full integration | Deferred — no API key access yet. Agent logs payment events but uses mock wallet. |
 
 ---
 
@@ -77,8 +107,10 @@ AGENTMAIL_API_KEY=         # AgentMail — agentmail.to
 LOCUS_API_KEY=             # Paylocus/Locus — dashboard.paywithlocus.com
 SUPERMEMORY_API_KEY=       # Supermemory — supermemory.ai
 LMNR_PROJECT_API_KEY=      # Laminar — laminar.sh
-CONVEX_URL=                # From Iana after Convex deployment
-CONVEX_DEPLOY_KEY=         # From Iana after Convex deployment
+DAYTONA_API_KEY=           # Daytona — daytona.io
+DAYTONA_API_URL=           # https://app.daytona.io/api
+CONVEX_URL=                # Convex cloud URL
+CONVEX_DEPLOY_KEY=         # Convex deploy key
 ```
 
 ### Frontend (`apps/web/.env.local`)
@@ -91,7 +123,23 @@ NEXT_PUBLIC_CONVEX_URL=    # From Iana after Convex deployment
 
 ## How to Test
 
-### Agent (standalone, no Convex needed)
+### Full end-to-end launch (recommended)
+
+```bash
+# 1. Install deps
+pip install -r agent/requirements.txt
+pip install -r orchestrator/requirements.txt
+
+# 2. Launch a sandbox (creates Convex record + Daytona sandbox + starts agent)
+python orchestrator/launch_sandbox.py \
+    --goal "Get 100 followers on X in 2 hours" \
+    --goal-type follower_count \
+    --target 100 \
+    --model claude-sonnet \
+    --time-limit 7200
+```
+
+### Agent standalone (no Convex/Daytona)
 
 ```bash
 cd agent
@@ -99,7 +147,7 @@ pip install -r requirements.txt
 python agent_runner.py --config test_config.json
 ```
 
-Without `CONVEX_URL` set, the agent falls back to console logging for all events. You'll see JSON output of each reasoning step, action, and result.
+Without `CONVEX_URL` set, the agent falls back to console logging.
 
 Sample `test_config.json`:
 ```json
@@ -116,7 +164,13 @@ Sample `test_config.json`:
 }
 ```
 
-### Frontend (needs Convex URL from Iana)
+### Seed Convex with demo data
+
+```bash
+python scripts/seed_convex.py
+```
+
+### Frontend
 
 ```bash
 cd apps/web
@@ -124,22 +178,26 @@ npm install
 npm run dev
 ```
 
-Without Convex, the page will show a loading state. Once `NEXT_PUBLIC_CONVEX_URL` is set and Convex is deployed, the dashboard will show live sandbox data.
-
 ---
 
 ## Architecture Notes for Team
 
-### Event flow: Agent → Convex → Frontend
+### Full pipeline flow
 
 ```
-agent_runner.py
-  └─ _push_event(sandbox_id, payload, event_type)
-       └─ EventBridge.push_event()   [orchestrator/event_bridge.py]
-            └─ POST {CONVEX_URL}/api/mutation
-                 └─ events:push mutation   [convex/events.ts]
-                      └─ useQuery(api.sandboxes.get)   [frontend subscribes]
-                           └─ BrowserStream / AgentThinking / ActivityFeed re-render
+launch_sandbox.py (CLI)
+  ├─ Convex: sandboxes:create
+  ├─ Daytona: create sandbox + upload agent code + install deps
+  └─ Daytona: start agent_runner.py in background
+
+agent_runner.py (inside Daytona sandbox)
+  ├─ Browser Use: create session → get live_url
+  ├─ EventBridge: update_live_url → Convex sandboxes table
+  └─ Agent loop:
+       ├─ LLM: messages.create with native tools → tool_use block
+       ├─ Execute tool (browser_task / send_email / make_payment)
+       ├─ EventBridge: push_event → Convex agentEvents table
+       └─ Frontend: useQuery → BrowserStream (iframe) / ActivityFeed re-render
 ```
 
 ### Event types pushed by agent
@@ -149,7 +207,6 @@ agent_runner.py
 | `"reasoning"` | Every agent step | `{ reasoning, action, action_type, result, progress, credits_used }` |
 | `"email"` | Agent sends email | `{ type: "email", direction: "sent", to, subject }` |
 | `"payment"` | Agent makes payment | `{ type: "payment", amount, description, recipient }` |
-| `"screenshot"` | Screenshot streamer | `{ image: "<base64 PNG>" }` |
 
 ### Frontend Convex subscriptions
 

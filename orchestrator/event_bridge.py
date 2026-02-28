@@ -42,6 +42,18 @@ class EventBridge:
             "outcome": outcome,
         })
 
+    async def update_live_url(
+        self, sandbox_id: str, live_url: str, share_url: str = ""
+    ) -> None:
+        """Push the Browser Use live_url and share_url to Convex."""
+        args: dict[str, Any] = {
+            "sandboxId": sandbox_id,
+            "liveUrl": live_url,
+        }
+        if share_url:
+            args["shareUrl"] = share_url
+        await self._call_mutation("sandboxes:updateLiveUrl", args)
+
     async def fetch_pending_prompts(self, sandbox_id: str) -> list[dict[str, Any]]:
         """Pull pending user prompts from Convex."""
         result = await self._call_query("prompts:fetchPending", {

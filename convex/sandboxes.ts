@@ -179,6 +179,20 @@ export const create = mutation({
   },
 });
 
+export const updateLiveUrl = mutation({
+  args: {
+    sandboxId: v.id("sandboxes"),
+    liveUrl: v.string(),
+    shareUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sandboxId, {
+      liveUrl: args.liveUrl,
+      ...(args.shareUrl !== undefined && { shareUrl: args.shareUrl }),
+    });
+  },
+});
+
 export const updateProgress = mutation({
   args: {
     sandboxId: v.id("sandboxes"),

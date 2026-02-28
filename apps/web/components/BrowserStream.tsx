@@ -5,10 +5,15 @@ import { useMemo } from "react";
 interface BrowserStreamProps {
   sandboxId: string;
   events?: any[];
+  liveUrl?: string | null;
+  shareUrl?: string | null;
 }
 
-export function BrowserStream({ sandboxId, events = [] }: BrowserStreamProps) {
+export function BrowserStream({ sandboxId, events = [], liveUrl, shareUrl }: BrowserStreamProps) {
+  const streamUrl = shareUrl || liveUrl;
+
   const latestScreenshot = useMemo(() => {
+    if (streamUrl) return null;
     const screenshotEvents = events.filter(
       (e: any) => e.eventType === "screenshot"
     );
@@ -21,20 +26,29 @@ export function BrowserStream({ sandboxId, events = [] }: BrowserStreamProps) {
     } catch {
       return null;
     }
-  }, [events]);
+  }, [events, streamUrl]);
 
   return (
     <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-accent-green animate-pulse" />
+          <div className={`w-2.5 h-2.5 rounded-full ${streamUrl ? "bg-accent-green" : "bg-yellow-500"} animate-pulse`} />
           <h3 className="text-sm font-medium">Live Browser Stream</h3>
         </div>
-        <span className="text-xs text-text-muted">~3s refresh</span>
+        <span className="text-xs text-text-muted">
+          {streamUrl ? "Live via Browser Use" : "~3s refresh"}
+        </span>
       </div>
 
       <div className="aspect-video bg-bg-primary relative flex items-center justify-center">
-        {latestScreenshot ? (
+        {streamUrl ? (
+          <iframe
+            src={streamUrl}
+            className="w-full h-full border-0"
+            allow="autoplay"
+            title="Agent browser live stream"
+          />
+        ) : latestScreenshot ? (
           <img
             src={`data:image/png;base64,${latestScreenshot}`}
             alt="Agent browser view"

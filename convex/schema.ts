@@ -15,6 +15,8 @@ export default defineSchema({
     walletBalance: v.number(),
     timeLimit: v.number(),
     creditsRemaining: v.number(),
+    liveUrl: v.optional(v.string()),
+    shareUrl: v.optional(v.string()),
     createdAt: v.number(),
     expiresAt: v.number(),
     createdBy: v.id("users"),

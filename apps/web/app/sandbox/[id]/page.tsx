@@ -44,7 +44,12 @@ export default function SandboxPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <BrowserStream sandboxId={sandboxId} events={recentEvents} />
+          <BrowserStream
+            sandboxId={sandboxId}
+            events={recentEvents}
+            liveUrl={(sandbox as any).liveUrl}
+            shareUrl={(sandbox as any).shareUrl}
+          />
           <AgentThinking sandboxId={sandboxId} events={recentEvents} />
           <ActivityFeed sandboxId={sandboxId} events={recentEvents} payments={recentPayments} />
         </div>

@@ -1,4 +1,4 @@
-"""OpenAI GPT provider — alternative model."""
+"""OpenAI GPT provider — uses native function calling API for structured actions."""
 
 import json
 import os
@@ -7,16 +7,8 @@ from typing import Any
 import openai
 
 from model_router import BaseProvider, Decision
-
-
-SYSTEM_PROMPT = """You are an autonomous agent pursuing a goal. Analyze the screenshot and context, then decide your next action.
-
-Respond with JSON:
-{
-  "reasoning": "your thought process",
-  "action_type": "browser" | "email" | "payment",
-  "action": { ... action details ... }
-}"""
+from prompts import SYSTEM_PROMPT, build_user_prompt
+from tools.schemas import to_openai_tools
 
 
 class OpenAIProvider(BaseProvider):
@@ -25,59 +17,50 @@ class OpenAIProvider(BaseProvider):
         self.model_id = model_id
 
     async def think(self, goal: str, screenshot: str, **context: Any) -> Decision:
-        prompt = _build_prompt(goal, **context)
+        prompt = build_user_prompt(goal, **context)
+
+        user_content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+        if screenshot:
+            user_content.insert(0, {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{screenshot}"},
+            })
 
         response = await self.client.chat.completions.create(
             model=self.model_id,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{screenshot}"},
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                },
+                {"role": "user", "content": user_content},
             ],
+            tools=to_openai_tools(),
+            tool_choice="required",
         )
 
-        return _parse_response(response.choices[0].message.content or "")
+        return _parse_tool_call(response)
 
 
-def _build_prompt(goal: str, **context: Any) -> str:
-    parts = [f"GOAL: {goal}"]
-    if context.get("wallet_balance") is not None:
-        parts.append(f"WALLET BALANCE: ${context['wallet_balance']:.2f}")
-    if context.get("emails"):
-        parts.append(f"RECENT EMAILS: {len(context['emails'])} messages")
-    if context.get("memory"):
-        parts.append(f"MEMORY:\n{context['memory']}")
-    if context.get("user_prompts"):
-        prompts = [p["promptText"] for p in context["user_prompts"]]
-        parts.append(f"USER SUGGESTIONS: {prompts}")
-    if context.get("action_history"):
-        recent = context["action_history"][-5:]
-        parts.append(f"RECENT ACTIONS: {recent}")
-    return "\n\n".join(parts)
+def _parse_tool_call(response: Any) -> Decision:
+    """Extract the function call from OpenAI's response."""
+    message = response.choices[0].message
+    reasoning = message.content or ""
 
+    if message.tool_calls:
+        call = message.tool_calls[0]
+        tool_name = call.function.name
+        try:
+            tool_input = json.loads(call.function.arguments)
+        except json.JSONDecodeError:
+            tool_input = {"raw": call.function.arguments}
+    else:
+        tool_name = "finish_reasoning"
+        tool_input = {"reasoning": reasoning}
 
-def _parse_response(text: str) -> Decision:
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        return Decision(
-            reasoning=text,
-            action_type="browser",
-            action={"type": "wait", "reason": "Failed to parse response"},
-            cost=0.01,
-        )
+    if tool_name == "finish_reasoning":
+        reasoning = tool_input.get("reasoning", reasoning)
 
     return Decision(
-        reasoning=data.get("reasoning", ""),
-        action_type=data.get("action_type", "browser"),
-        action=data.get("action", {}),
+        reasoning=reasoning,
+        action_type=tool_name,
+        action=tool_input,
         cost=0.01,
     )

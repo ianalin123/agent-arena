@@ -1,4 +1,9 @@
-"""Browser Use integration — cloud-hosted browser automation for agents."""
+"""Browser Use integration — cloud-hosted browser automation for agents.
+
+Uses Browser Use's high-level task API: give it a natural language task
+and it handles all browser actions internally. Sessions provide a live_url
+for real-time browser streaming and a public share URL for embedding.
+"""
 
 import os
 import logging
@@ -14,76 +19,51 @@ class BrowserTool:
         self.api_key = api_key or os.environ.get("BROWSER_USE_API_KEY", "")
         self.client = AsyncBrowserUse(api_key=self.api_key)
         self.session_id: str | None = None
-        self._last_task_id: str | None = None
+        self.live_url: str | None = None
+        self.share_url: str | None = None
+        self._last_screenshot: str | None = None
 
     async def create_session(self) -> None:
-        """Initialize a persistent Browser Use cloud session."""
+        """Initialize a persistent Browser Use cloud session with live streaming."""
         session = await self.client.sessions.create()
         self.session_id = session.id
-        logger.info("Browser session created: %s", self.session_id)
-
-    async def screenshot(self) -> str:
-        """Capture current browser state as base64 PNG.
-
-        Runs a lightweight task to observe the current page and return
-        the last screenshot from task steps.
-        """
-        if not self.session_id:
-            await self.create_session()
-
-        result = await self.client.run(
-            "Take a screenshot of the current page. Do not navigate or click anything.",
-            session_id=self.session_id,
-            vision=True,
-        )
-        self._last_task_id = result.id
-
-        if result.steps:
-            last_step = result.steps[-1]
-            if hasattr(last_step, "screenshot") and last_step.screenshot:
-                return last_step.screenshot
+        self.live_url = getattr(session, "live_url", None)
+        logger.info("Browser session created: %s (live_url=%s)", self.session_id, self.live_url)
 
         try:
-            screenshots = await self.client.tasks.get_screenshots(result.id)
-            if screenshots:
-                return screenshots[-1] if isinstance(screenshots[-1], str) else ""
-        except Exception:
-            logger.debug("Could not fetch task screenshots for %s", result.id)
-
-        return ""
+            share = await self.client.sessions.create_share(session.id)
+            self.share_url = getattr(share, "url", None)
+            logger.info("Share URL created: %s", self.share_url)
+        except Exception as e:
+            logger.warning("Could not create share URL: %s", e)
+            self.share_url = None
 
     async def execute(self, action: dict[str, Any]) -> dict[str, Any]:
-        """Execute a browser action (navigate, click, type, scroll)."""
-        action_type = action.get("type")
+        """Execute a high-level browser task via natural language.
 
-        if action_type == "navigate":
-            return await self._navigate(action["url"])
-        elif action_type == "click":
-            return await self._click(action["selector"])
-        elif action_type == "type":
-            return await self._type(action["selector"], action["text"])
-        elif action_type == "scroll":
-            return await self._scroll(action.get("direction", "down"))
-        elif action_type == "wait":
-            return {"status": "waited"}
-        else:
-            return {"error": f"Unknown browser action: {action_type}"}
+        The action dict should contain:
+          {"task": "Natural language description of what to do"}
 
-    async def _run_task(self, instruction: str, start_url: str | None = None) -> dict[str, Any]:
-        """Run a Browser Use task within our persistent session."""
+        Browser Use handles all low-level browser orchestration internally.
+        """
+        task = action.get("task", "")
+        if not task:
+            return {"status": "error", "error": "No task description provided"}
+
         if not self.session_id:
             await self.create_session()
 
-        kwargs: dict[str, Any] = {
-            "session_id": self.session_id,
-            "vision": True,
-        }
-        if start_url:
-            kwargs["start_url"] = start_url
-
         try:
-            result = await self.client.run(instruction, **kwargs)
-            self._last_task_id = result.id
+            result = await self.client.run(
+                task,
+                session_id=self.session_id,
+            )
+
+            if result.steps:
+                last_step = result.steps[-1]
+                if hasattr(last_step, "screenshot") and last_step.screenshot:
+                    self._last_screenshot = last_step.screenshot
+
             return {
                 "status": "completed",
                 "output": result.output or "",
@@ -94,31 +74,19 @@ class BrowserTool:
             logger.error("Browser task failed: %s", e)
             return {"status": "error", "error": str(e)}
 
-    async def _navigate(self, url: str) -> dict[str, Any]:
-        result = await self._run_task(f"Navigate to {url}", start_url=url)
-        result["url"] = url
-        return result
-
-    async def _click(self, selector: str) -> dict[str, Any]:
-        result = await self._run_task(f"Click on the element described as: {selector}")
-        result["selector"] = selector
-        return result
-
-    async def _type(self, selector: str, text: str) -> dict[str, Any]:
-        result = await self._run_task(
-            f"Find the input field described as '{selector}' and type the following text: {text}"
-        )
-        result["selector"] = selector
-        result["length"] = len(text)
-        return result
-
-    async def _scroll(self, direction: str) -> dict[str, Any]:
-        result = await self._run_task(f"Scroll the page {direction}")
-        result["direction"] = direction
-        return result
+    def get_last_screenshot(self) -> str | None:
+        """Return the last screenshot captured from task steps (fallback for live_url)."""
+        return self._last_screenshot
 
     async def close(self) -> None:
         """Tear down the Browser Use session."""
+        if self.session_id:
+            try:
+                await self.client.sessions.stop(self.session_id)
+            except Exception as e:
+                logger.debug("Error stopping session: %s", e)
         self.session_id = None
-        self._last_task_id = None
+        self.live_url = None
+        self.share_url = None
+        self._last_screenshot = None
         logger.info("Browser session closed")

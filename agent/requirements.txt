@@ -7,3 +7,5 @@ supermemory
 lmnr
 httpx
 Pillow
+daytona
+python-dotenv

@@ -1,4 +1,9 @@
-"""Main agent loop — runs inside each Daytona sandbox."""
+"""Main agent loop — runs inside each Daytona sandbox.
+
+Uses native tool use APIs for structured LLM responses, Browser Use
+high-level task API with live_url streaming, and automatic model
+fallback on rate limits.
+"""
 
 import asyncio
 import json
@@ -8,7 +13,7 @@ import sys
 
 from lmnr import Laminar, observe
 
-from model_router import ModelRouter
+from model_router import ModelRouter, Decision
 from tools.browser import BrowserTool
 from tools.email import EmailTool
 from tools.payments import PaymentsTool
@@ -40,12 +45,26 @@ def _get_bridge():
     return _bridge
 
 
+def _detect_loop(recent_actions: list[dict], window: int = 3) -> str | None:
+    """Check if the agent is stuck repeating the same action."""
+    if len(recent_actions) < window:
+        return None
+    last_n = recent_actions[-window:]
+    types = [a.get("action_type") for a in last_n]
+    tasks = [str(a.get("action", {}).get("task", "")) for a in last_n]
+    if len(set(types)) == 1 and len(set(tasks)) == 1:
+        return "You appear stuck repeating the same action. Try a completely different approach or strategy."
+    return None
+
+
 async def run_agent(sandbox_config: dict):
     if os.environ.get("LMNR_PROJECT_API_KEY"):
         Laminar.initialize()
         logger.info("Laminar tracing initialized")
 
-    model = ModelRouter().get(sandbox_config["model"])
+    router = ModelRouter()
+    fallback_chain = router.get_fallback_chain(sandbox_config["model"])
+
     browser = BrowserTool()
     mail = EmailTool(inbox_id=sandbox_config.get("agentmail_inbox_id", ""))
     payments = PaymentsTool(wallet_id=sandbox_config.get("paylocus_wallet_id", ""))
@@ -59,9 +78,11 @@ async def run_agent(sandbox_config: dict):
 
     await browser.create_session()
 
+    if browser.live_url or browser.share_url:
+        await _push_live_url(sandbox_id, browser.live_url or "", browser.share_url or "")
+
     try:
         while credits > 0 and not verifier.goal_achieved and not verifier.time_expired:
-            screenshot = await browser.screenshot()
             emails = await mail.check_inbox()
             balance = await payments.get_balance()
 
@@ -78,41 +99,28 @@ async def run_agent(sandbox_config: dict):
                     sandbox_id=sandbox_id,
                 )
 
-            decision = await _think_step(
-                model, goal, screenshot, emails, balance,
-                past_context, user_prompts, recent_actions,
+            stuck_hint = _detect_loop(recent_actions)
+            screenshot = browser.get_last_screenshot() or ""
+
+            decision = await _think_step_with_fallback(
+                fallback_chain, goal, screenshot, emails, balance,
+                past_context, user_prompts, recent_actions, stuck_hint,
             )
 
-            if decision.action_type == "browser":
-                result = await browser.execute(decision.action)
-            elif decision.action_type == "email":
-                result = await mail.send(decision.action)
-                await _push_event(sandbox_id, {
-                    "type": "email",
-                    "direction": "sent",
-                    "to": decision.action.get("to", ""),
-                    "subject": decision.action.get("subject", ""),
-                }, event_type="email")
-            elif decision.action_type == "payment":
-                result = await payments.transact(decision.action)
-                await _push_event(sandbox_id, {
-                    "type": "payment",
-                    "amount": decision.action.get("amount", 0),
-                    "description": decision.action.get("description", ""),
-                    "recipient": decision.action.get("recipient", ""),
-                }, event_type="payment")
-            else:
-                result = {"error": f"Unknown action type: {decision.action_type}"}
+            result = await _execute_action(decision, browser, mail, payments, sandbox_id)
 
             memory.add(
-                content=f"Action: {decision.action}, Result: {result}",
+                content=f"Action: {decision.action_type} {decision.action}, Result: {result}",
                 sandbox_id=sandbox_id,
                 goal_type=sandbox_config.get("goal_type", "general"),
             )
 
-            recent_actions.append(
-                {"action": decision.action, "result": result, "reasoning": decision.reasoning}
-            )
+            recent_actions.append({
+                "action_type": decision.action_type,
+                "action": decision.action,
+                "result": result,
+                "reasoning": decision.reasoning,
+            })
             if len(recent_actions) > 20:
                 recent_actions = recent_actions[-20:]
 
@@ -142,19 +150,90 @@ async def run_agent(sandbox_config: dict):
     await _complete_sandbox(sandbox_id, success)
 
 
+async def _execute_action(
+    decision: Decision,
+    browser: BrowserTool,
+    mail: EmailTool,
+    payments: PaymentsTool,
+    sandbox_id: str,
+) -> dict:
+    """Execute the tool call from the LLM's decision, with error handling."""
+    try:
+        if decision.action_type == "browser_task":
+            return await browser.execute(decision.action)
+
+        elif decision.action_type == "send_email":
+            result = await mail.send(decision.action)
+            await _push_event(sandbox_id, {
+                "type": "email",
+                "direction": "sent",
+                "to": decision.action.get("to", ""),
+                "subject": decision.action.get("subject", ""),
+            }, event_type="email")
+            return result
+
+        elif decision.action_type == "make_payment":
+            result = await payments.transact(decision.action)
+            await _push_event(sandbox_id, {
+                "type": "payment",
+                "amount": decision.action.get("amount", 0),
+                "description": decision.action.get("description", ""),
+                "recipient": decision.action.get("recipient", ""),
+            }, event_type="payment")
+            return result
+
+        elif decision.action_type == "finish_reasoning":
+            return {"status": "reasoning_only", "reasoning": decision.reasoning}
+
+        else:
+            return {"error": f"Unknown action type: {decision.action_type}"}
+
+    except Exception as e:
+        logger.error("Action execution failed (%s): %s", decision.action_type, e)
+        return {"status": "error", "error": str(e)}
+
+
 @observe(name="agent_reasoning_step")
-async def _think_step(model, goal, screenshot, emails, balance,
-                      past_context, user_prompts, recent_actions):
-    """Wrapped reasoning step — traced by Laminar for observability."""
-    return await model.think(
-        goal=goal,
-        screenshot=screenshot,
-        emails=emails,
-        wallet_balance=balance,
-        memory=past_context,
-        user_prompts=user_prompts,
-        action_history=recent_actions,
+async def _think_step_with_fallback(
+    fallback_chain, goal, screenshot, emails, balance,
+    past_context, user_prompts, recent_actions, stuck_hint,
+) -> Decision:
+    """Try the primary provider, fall back to alternatives on failure."""
+    last_error = None
+    for provider in fallback_chain:
+        try:
+            return await provider.think(
+                goal=goal,
+                screenshot=screenshot,
+                emails=emails,
+                wallet_balance=balance,
+                memory=past_context,
+                user_prompts=user_prompts,
+                action_history=recent_actions,
+                stuck_hint=stuck_hint,
+            )
+        except Exception as e:
+            provider_name = type(provider).__name__
+            logger.warning("Provider %s failed: %s — trying fallback", provider_name, e)
+            last_error = e
+
+    logger.error("All providers failed. Last error: %s", last_error)
+    return Decision(
+        reasoning=f"All LLM providers failed: {last_error}",
+        action_type="finish_reasoning",
+        action={"reasoning": "Waiting for provider recovery", "should_stop": False},
+        cost=0.0,
     )
+
+
+async def _push_live_url(sandbox_id: str, live_url: str, share_url: str) -> None:
+    bridge = _get_bridge()
+    if bridge:
+        try:
+            await bridge.update_live_url(sandbox_id, live_url, share_url)
+            logger.info("Pushed live_url to Convex: %s", live_url)
+        except Exception as e:
+            logger.warning("Failed to push live_url: %s", e)
 
 
 async def _fetch_pending_prompts(sandbox_id: str) -> list[dict]:
