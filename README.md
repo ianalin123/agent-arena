@@ -61,3 +61,5 @@ python agent_runner.py --config config.json
 
 - [Technical Plan](docs/technical_plan.md) — full architecture, data model, and build phases
 - [Work Split](docs/work_split.md) — concurrent development plan for the team
+- [Person 1 Plan — Sissi](docs/plan_person1_agent_runtime.md) — Agent Runtime track (agent/, providers, tools)
+- [Person 2 Plan — Iana](docs/plan_person2_convex_platform.md) — Convex Platform track (convex/, orchestrator/)

@@ -2,13 +2,18 @@
 
 ## Team
 
-| Person | Focus | Primary Languages |
-|--------|-------|-------------------|
-| **Max** | Frontend (Next.js on Vercel) | TypeScript, React |
-| **Sissi** | Backend — Track A or B (see below) | Python or TypeScript |
-| **Iana** | Backend — Track A or B (see below) | Python or TypeScript |
+| Person | Track | Focus | Primary Languages |
+|--------|-------|-------|-------------------|
+| **Max** | Frontend | Next.js on Vercel | TypeScript, React |
+| **Sissi** | Track A | Agent Runtime (`agent/`) | Python |
+| **Iana** | Track B | Convex Platform (`convex/`, `orchestrator/`) | TypeScript, Python |
 
 Max has full repo access and will mock up the frontend against whatever backend data is available. Sissi and Iana split the backend into two independent tracks.
+
+### Detailed Plans
+
+- **[Person 1 Plan — Sissi (Agent Runtime)](plan_person1_agent_runtime.md)**
+- **[Person 2 Plan — Iana (Convex Platform)](plan_person2_convex_platform.md)**
 
 ---
 
@@ -161,12 +166,10 @@ The **only shared file** is `event_bridge.py` — a thin Convex client. Track B 
 
 ---
 
-## Choosing Tracks
+## Track Assignments
 
-- **Track A (Agent Runtime)** is heavier on LLM API wrangling, prompt engineering, and integrating multiple third-party SDKs (Browser Use, AgentMail, Paylocus, Supermemory, Laminar). It's the "make the agent smart" track.
-- **Track B (Convex Platform)** is heavier on data modeling, real-time reactive queries, and getting the math right (parimutuel odds, settlement). It's the "make the platform work" track.
-
-Pick based on strengths — whoever is more comfortable with LLM APIs and Python async takes Track A; whoever is stronger with TypeScript and data/state management takes Track B.
+- **Track A — Sissi (Agent Runtime):** LLM API wrangling, prompt engineering, and integrating sponsor SDKs (Browser Use, AgentMail, Paylocus, Supermemory, Laminar). The "make the agent smart" track.
+- **Track B — Iana (Convex Platform):** Data modeling, real-time reactive queries, betting math, orchestration, and Daytona sandbox management. The "make the platform work" track.
 
 ---
 
