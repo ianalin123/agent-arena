@@ -25,7 +25,7 @@ class EventBridge:
         await self._call_mutation("events:push", {
             "sandboxId": sandbox_id,
             "eventType": event_type,
-            "payload": json.dumps(payload),
+            "payload": json.dumps(payload, default=str),
         })
 
     async def update_progress(self, sandbox_id: str, progress: float) -> None:

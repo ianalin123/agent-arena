@@ -23,6 +23,7 @@ AGENT_DIR = Path(__file__).resolve().parent.parent / "agent"
 
 AGENT_FILES = [
     "agent_runner.py",
+    "base.py",
     "model_router.py",
     "prompts.py",
     "goal_verifier.py",

@@ -11,9 +11,13 @@ import logging
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from lmnr import Laminar, observe
 
-from model_router import ModelRouter, Decision
+from base import Decision
+from model_router import ModelRouter
 from tools.browser import BrowserTool
 from tools.email import EmailTool
 from tools.payments import PaymentsTool
@@ -137,9 +141,17 @@ async def run_agent(sandbox_config: dict):
 
             bridge = _get_bridge()
             if bridge:
-                await bridge.update_progress(sandbox_id, progress)
+                try:
+                    await bridge.update_progress(sandbox_id, progress)
+                except Exception as e:
+                    logger.warning("Failed to update progress in Convex: %s", e)
 
             credits -= decision.cost
+
+            if (decision.action_type == "finish_reasoning"
+                    and decision.action.get("should_stop")):
+                logger.info("Agent chose to stop (finish_reasoning with should_stop=True)")
+                break
 
     finally:
         await browser.close()

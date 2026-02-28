@@ -5,7 +5,7 @@ from typing import Any
 
 import anthropic
 
-from model_router import BaseProvider, Decision
+from base import BaseProvider, Decision
 from prompts import SYSTEM_PROMPT, build_user_prompt
 from tools.schemas import to_anthropic_tools
 

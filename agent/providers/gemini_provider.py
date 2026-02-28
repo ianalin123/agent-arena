@@ -8,7 +8,7 @@ from typing import Any
 import google.generativeai as genai
 from PIL import Image
 
-from model_router import BaseProvider, Decision
+from base import BaseProvider, Decision
 from prompts import SYSTEM_PROMPT, build_user_prompt
 from tools.schemas import to_gemini_tools
 

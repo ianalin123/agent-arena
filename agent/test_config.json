@@ -1,0 +1,11 @@
+{
+    "sandbox_id": "test-local-001",
+    "goal": "Go to google.com and search for 'Agent Arena AI'",
+    "goal_type": "general",
+    "target_value": 1,
+    "model": "claude-sonnet",
+    "time_limit": 300,
+    "initial_credits": 10,
+    "agentmail_inbox_id": "",
+    "paylocus_wallet_id": ""
+  }
