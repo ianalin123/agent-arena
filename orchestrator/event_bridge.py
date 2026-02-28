@@ -51,17 +51,36 @@ class EventBridge:
 
     async def _call_mutation(self, function_name: str, args: dict[str, Any]) -> Any:
         """Call a Convex mutation via HTTP API."""
-        # TODO: Implement Convex HTTP API call
-        # POST {convex_url}/api/mutation
-        # Headers: Authorization: Bearer {deploy_key}
-        # Body: { "path": function_name, "args": args }
-        pass
+        url = f"{self.convex_url.rstrip('/')}/api/mutation"
+        payload = {"path": function_name, "args": args, "format": "json"}
+        headers = {
+            "Authorization": f"Bearer {self.deploy_key}",
+            "Content-Type": "application/json",
+        }
+        resp = await self.client.post(url, json=payload, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+        if data.get("status") == "error":
+            msg = data.get("errorMessage", "Convex mutation failed")
+            raise RuntimeError(msg)
+
+        return data.get("value")
 
     async def _call_query(self, function_name: str, args: dict[str, Any]) -> Any:
         """Call a Convex query via HTTP API."""
-        # TODO: Implement Convex HTTP API call
-        # POST {convex_url}/api/query
-        pass
+        url = f"{self.convex_url.rstrip('/')}/api/query"
+        payload = {"path": function_name, "args": args, "format": "json"}
+        headers = {
+            "Authorization": f"Bearer {self.deploy_key}",
+            "Content-Type": "application/json",
+        }
+        resp = await self.client.post(url, json=payload, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+        if data.get("status") == "error":
+            msg = data.get("errorMessage", "Convex query failed")
+            raise RuntimeError(msg)
+        return data.get("value")
 
     async def close(self) -> None:
         await self.client.aclose()

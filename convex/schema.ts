@@ -20,7 +20,8 @@ export default defineSchema({
     createdBy: v.id("users"),
   })
     .index("by_status", ["status"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    .index("by_model", ["model"]),
 
   bets: defineTable({
     sandboxId: v.id("sandboxes"),
@@ -86,5 +87,5 @@ export default defineSchema({
     name: v.string(),
     email: v.string(),
     balance: v.number(),
-  }),
+  }).index("by_email", ["email"]),
 });
