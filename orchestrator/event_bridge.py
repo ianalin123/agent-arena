@@ -66,7 +66,7 @@ class EventBridge:
         url = f"{self.convex_url.rstrip('/')}/api/mutation"
         payload = {"path": function_name, "args": args, "format": "json"}
         headers = {
-            "Authorization": f"Bearer {self.deploy_key}",
+            "Authorization": f"Convex {self.deploy_key}",
             "Content-Type": "application/json",
         }
         resp = await self.client.post(url, json=payload, headers=headers)
@@ -83,7 +83,7 @@ class EventBridge:
         url = f"{self.convex_url.rstrip('/')}/api/query"
         payload = {"path": function_name, "args": args, "format": "json"}
         headers = {
-            "Authorization": f"Bearer {self.deploy_key}",
+            "Authorization": f"Convex {self.deploy_key}",
             "Content-Type": "application/json",
         }
         resp = await self.client.post(url, json=payload, headers=headers)
