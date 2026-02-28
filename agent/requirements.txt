@@ -1,9 +1,9 @@
 anthropic
 openai
 google-generativeai
-browser-use
+browser-use-sdk
 agentmail
 supermemory
-laminar
-paylocus
+lmnr
 httpx
+Pillow

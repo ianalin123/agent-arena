@@ -2,7 +2,11 @@
 
 import asyncio
 import json
+import logging
 import os
+import sys
+
+from lmnr import Laminar, observe
 
 from model_router import ModelRouter
 from tools.browser import BrowserTool
@@ -11,100 +15,185 @@ from tools.payments import PaymentsTool
 from goal_verifier import GoalVerifier
 from memory import AgentMemory
 
+logger = logging.getLogger(__name__)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "orchestrator"))
+
+_bridge = None
+
+
+def _get_bridge():
+    """Lazily initialize the EventBridge (only when Convex env vars are set)."""
+    global _bridge
+    if _bridge is not None:
+        return _bridge
+
+    convex_url = os.environ.get("CONVEX_URL")
+    convex_key = os.environ.get("CONVEX_DEPLOY_KEY")
+    if convex_url and convex_key:
+        try:
+            from event_bridge import EventBridge
+            _bridge = EventBridge(convex_url, convex_key)
+            logger.info("EventBridge connected to %s", convex_url)
+        except ImportError:
+            logger.warning("event_bridge module not available, using mock")
+    return _bridge
+
 
 async def run_agent(sandbox_config: dict):
+    if os.environ.get("LMNR_PROJECT_API_KEY"):
+        Laminar.initialize()
+        logger.info("Laminar tracing initialized")
+
     model = ModelRouter().get(sandbox_config["model"])
-    browser = BrowserTool(api_key=os.environ["BROWSER_USE_KEY"])
-    mail = EmailTool(
-        api_key=os.environ["AGENTMAIL_KEY"],
-        inbox_id=sandbox_config["agentmail_inbox_id"],
-    )
-    payments = PaymentsTool(
-        api_key=os.environ["PAYLOCUS_KEY"],
-        wallet_id=sandbox_config["paylocus_wallet_id"],
-    )
-    memory = AgentMemory(api_key=os.environ["SUPERMEMORY_KEY"])
+    browser = BrowserTool()
+    mail = EmailTool(inbox_id=sandbox_config.get("agentmail_inbox_id", ""))
+    payments = PaymentsTool(wallet_id=sandbox_config.get("paylocus_wallet_id", ""))
+    memory = AgentMemory(api_key=os.environ.get("SUPERMEMORY_API_KEY", ""))
     verifier = GoalVerifier(sandbox_config)
 
     sandbox_id = sandbox_config["sandbox_id"]
     goal = sandbox_config["goal"]
-    credits = sandbox_config["initial_credits"]
+    credits = sandbox_config.get("initial_credits", 50)
     recent_actions: list[dict] = []
 
-    while credits > 0 and not verifier.goal_achieved and not verifier.time_expired:
-        screenshot = await browser.screenshot()
-        emails = await mail.check_inbox()
-        balance = await payments.get_balance()
+    await browser.create_session()
 
-        past_context = memory.search(
-            query=f"strategies for {sandbox_config['goal_type']}",
-            sandbox_id=sandbox_id,
-        )
+    try:
+        while credits > 0 and not verifier.goal_achieved and not verifier.time_expired:
+            screenshot = await browser.screenshot()
+            emails = await mail.check_inbox()
+            balance = await payments.get_balance()
 
-        user_prompts = await _fetch_pending_prompts(sandbox_id)
+            past_context = memory.search(
+                query=f"strategies for {sandbox_config.get('goal_type', 'general')}",
+                sandbox_id=sandbox_id,
+            )
 
-        decision = await model.think(
-            goal=goal,
-            screenshot=screenshot,
-            emails=emails,
-            wallet_balance=balance,
-            memory=past_context,
-            user_prompts=user_prompts,
-            action_history=recent_actions,
-        )
+            user_prompts = await _fetch_pending_prompts(sandbox_id)
 
-        if decision.action_type == "browser":
-            result = await browser.execute(decision.action)
-        elif decision.action_type == "email":
-            result = await mail.send(decision.action)
-        elif decision.action_type == "payment":
-            result = await payments.transact(decision.action)
-        else:
-            result = {"error": f"Unknown action type: {decision.action_type}"}
+            for prompt_data in user_prompts:
+                memory.add_user_prompt(
+                    prompt=prompt_data.get("promptText", ""),
+                    sandbox_id=sandbox_id,
+                )
 
-        memory.add(
-            content=f"Action: {decision.action}, Result: {result}",
-            sandbox_id=sandbox_id,
-            goal_type=sandbox_config["goal_type"],
-        )
+            decision = await _think_step(
+                model, goal, screenshot, emails, balance,
+                past_context, user_prompts, recent_actions,
+            )
 
-        recent_actions.append(
-            {"action": decision.action, "result": result, "reasoning": decision.reasoning}
-        )
-        if len(recent_actions) > 20:
-            recent_actions = recent_actions[-20:]
+            if decision.action_type == "browser":
+                result = await browser.execute(decision.action)
+            elif decision.action_type == "email":
+                result = await mail.send(decision.action)
+                await _push_event(sandbox_id, {
+                    "type": "email",
+                    "direction": "sent",
+                    "to": decision.action.get("to", ""),
+                    "subject": decision.action.get("subject", ""),
+                }, event_type="email")
+            elif decision.action_type == "payment":
+                result = await payments.transact(decision.action)
+                await _push_event(sandbox_id, {
+                    "type": "payment",
+                    "amount": decision.action.get("amount", 0),
+                    "description": decision.action.get("description", ""),
+                    "recipient": decision.action.get("recipient", ""),
+                }, event_type="payment")
+            else:
+                result = {"error": f"Unknown action type: {decision.action_type}"}
 
-        await _push_event(sandbox_id, {
-            "reasoning": decision.reasoning,
-            "action": decision.action,
-            "result": result,
-            "progress": await verifier.check_progress(),
-            "credits_used": decision.cost,
-        })
+            memory.add(
+                content=f"Action: {decision.action}, Result: {result}",
+                sandbox_id=sandbox_id,
+                goal_type=sandbox_config.get("goal_type", "general"),
+            )
 
-        credits -= decision.cost
+            recent_actions.append(
+                {"action": decision.action, "result": result, "reasoning": decision.reasoning}
+            )
+            if len(recent_actions) > 20:
+                recent_actions = recent_actions[-20:]
 
-    await _complete_sandbox(sandbox_id, verifier.goal_achieved)
+            progress = await verifier.check_progress()
+
+            await _push_event(sandbox_id, {
+                "reasoning": decision.reasoning,
+                "action": decision.action,
+                "action_type": decision.action_type,
+                "result": result,
+                "progress": progress,
+                "credits_used": decision.cost,
+            }, event_type="reasoning")
+
+            bridge = _get_bridge()
+            if bridge:
+                await bridge.update_progress(sandbox_id, progress)
+
+            credits -= decision.cost
+
+    finally:
+        await browser.close()
+        if hasattr(payments, "close"):
+            await payments.close()
+
+    success = verifier.goal_achieved
+    await _complete_sandbox(sandbox_id, success)
+
+
+@observe(name="agent_reasoning_step")
+async def _think_step(model, goal, screenshot, emails, balance,
+                      past_context, user_prompts, recent_actions):
+    """Wrapped reasoning step — traced by Laminar for observability."""
+    return await model.think(
+        goal=goal,
+        screenshot=screenshot,
+        emails=emails,
+        wallet_balance=balance,
+        memory=past_context,
+        user_prompts=user_prompts,
+        action_history=recent_actions,
+    )
 
 
 async def _fetch_pending_prompts(sandbox_id: str) -> list[dict]:
-    # TODO: Wire to Convex via event_bridge
+    bridge = _get_bridge()
+    if bridge:
+        try:
+            return await bridge.fetch_pending_prompts(sandbox_id)
+        except Exception as e:
+            logger.warning("Failed to fetch prompts from Convex: %s", e)
     return []
 
 
-async def _push_event(sandbox_id: str, event: dict):
-    # TODO: Wire to Convex via event_bridge
-    print(json.dumps({"sandbox_id": sandbox_id, **event}))
+async def _push_event(sandbox_id: str, payload: dict, event_type: str = "reasoning"):
+    bridge = _get_bridge()
+    if bridge:
+        try:
+            await bridge.push_event(sandbox_id, event_type, payload)
+            return
+        except Exception as e:
+            logger.warning("Failed to push event to Convex: %s", e)
+    logger.info("Event [%s] %s", event_type, json.dumps({"sandbox_id": sandbox_id, **payload}, default=str))
 
 
 async def _complete_sandbox(sandbox_id: str, success: bool):
-    # TODO: Wire to Convex via event_bridge
     outcome = "success" if success else "failed"
-    print(json.dumps({"sandbox_id": sandbox_id, "outcome": outcome}))
+    bridge = _get_bridge()
+    if bridge:
+        try:
+            await bridge.complete_sandbox(sandbox_id, outcome)
+            return
+        except Exception as e:
+            logger.warning("Failed to complete sandbox in Convex: %s", e)
+    logger.info("Sandbox completed: %s", json.dumps({"sandbox_id": sandbox_id, "outcome": outcome}))
 
 
 if __name__ == "__main__":
     import argparse
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="Path to sandbox config JSON")
