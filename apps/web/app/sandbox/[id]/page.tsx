@@ -7,7 +7,6 @@ import { BrowserStream } from "../../../components/BrowserStream";
 import { BettingPanel } from "../../../components/BettingPanel";
 import { AgentThinking } from "../../../components/AgentThinking";
 import { GoalProgress } from "../../../components/GoalProgress";
-import { ActivityFeed } from "../../../components/ActivityFeed";
 import { PromptInput } from "../../../components/PromptInput";
 import { CreditInjection } from "../../../components/CreditInjection";
 import { LogStream } from "../../../components/LogStream";
@@ -53,7 +52,6 @@ export default function SandboxPage() {
           />
           <AgentThinking sandboxId={sandboxId} events={recentEvents} />
           <LogStream sandboxId={sandboxId} maxHeight="20rem" />
-          <ActivityFeed sandboxId={sandboxId} events={recentEvents} payments={recentPayments} />
         </div>
 
         <aside className="space-y-6">

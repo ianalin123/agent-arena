@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/api";
+import type { Id } from "@/convex/types";
 
 interface GoalProgressProps {
   sandbox: any;
@@ -22,6 +25,10 @@ function formatTime(seconds: number): string {
 
 export function GoalProgress({ sandbox }: GoalProgressProps) {
   const [remaining, setRemaining] = useState("");
+
+  const stopSandbox = useMutation(api.sandboxes.stop);
+  const pauseSandbox = useMutation(api.sandboxes.pause);
+  const resumeSandbox = useMutation(api.sandboxes.resume);
 
   useEffect(() => {
     if (!sandbox) return;
@@ -52,6 +59,14 @@ export function GoalProgress({ sandbox }: GoalProgressProps) {
     failed: "bg-accent-red/15 text-accent-red",
     paused: "bg-text-muted/15 text-text-muted",
   };
+
+  const canStop = sandbox.status === "active" || sandbox.status === "paused" || sandbox.status === "pending";
+  const canPause = sandbox.status === "active";
+  const canResume = sandbox.status === "paused";
+
+  const handleStop = () => stopSandbox({ sandboxId: sandbox._id as Id<"sandboxes"> });
+  const handlePause = () => pauseSandbox({ sandboxId: sandbox._id as Id<"sandboxes"> });
+  const handleResume = () => resumeSandbox({ sandboxId: sandbox._id as Id<"sandboxes"> });
 
   return (
     <div className="rounded-xl border border-border bg-bg-card p-5">
@@ -116,6 +131,35 @@ export function GoalProgress({ sandbox }: GoalProgressProps) {
           </span>
         </div>
       </div>
+
+      {(canStop || canPause || canResume) && (
+        <div className="mt-5 pt-4 border-t border-border flex gap-2">
+          {canPause && (
+            <button
+              onClick={handlePause}
+              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-accent-yellow/15 text-accent-yellow hover:bg-accent-yellow/25 transition-colors"
+            >
+              Pause
+            </button>
+          )}
+          {canResume && (
+            <button
+              onClick={handleResume}
+              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-accent-green/15 text-accent-green hover:bg-accent-green/25 transition-colors"
+            >
+              Resume
+            </button>
+          )}
+          {canStop && (
+            <button
+              onClick={handleStop}
+              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-accent-red/15 text-accent-red hover:bg-accent-red/25 transition-colors"
+            >
+              Stop
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import {
   action,
   internalAction,
-  internalMutation,
   internalQuery,
   mutation,
   query,
@@ -227,7 +226,7 @@ export const complete = mutation({
   },
 });
 
-export const updateAfterLaunch = internalMutation({
+export const updateAfterLaunch = mutation({
   args: {
     sandboxId: v.id("sandboxes"),
     daytonaSandboxId: v.string(),
@@ -300,5 +299,41 @@ export const autoSettleExpired = internalAction({
     for (const sandboxId of expiredIds) {
       await ctx.runMutation(internal.betting.settleExpired, { sandboxId });
     }
+  },
+});
+
+export const stop = mutation({
+  args: { sandboxId: v.id("sandboxes") },
+  handler: async (ctx, args) => {
+    const sandbox = await ctx.db.get(args.sandboxId);
+    if (!sandbox) throw new Error("Sandbox not found");
+    if (sandbox.status !== "active" && sandbox.status !== "paused" && sandbox.status !== "pending") {
+      throw new Error(`Cannot stop sandbox with status "${sandbox.status}"`);
+    }
+    await ctx.db.patch(args.sandboxId, { status: "failed" });
+  },
+});
+
+export const pause = mutation({
+  args: { sandboxId: v.id("sandboxes") },
+  handler: async (ctx, args) => {
+    const sandbox = await ctx.db.get(args.sandboxId);
+    if (!sandbox) throw new Error("Sandbox not found");
+    if (sandbox.status !== "active") {
+      throw new Error(`Cannot pause sandbox with status "${sandbox.status}"`);
+    }
+    await ctx.db.patch(args.sandboxId, { status: "paused" });
+  },
+});
+
+export const resume = mutation({
+  args: { sandboxId: v.id("sandboxes") },
+  handler: async (ctx, args) => {
+    const sandbox = await ctx.db.get(args.sandboxId);
+    if (!sandbox) throw new Error("Sandbox not found");
+    if (sandbox.status !== "paused") {
+      throw new Error(`Cannot resume sandbox with status "${sandbox.status}"`);
+    }
+    await ctx.db.patch(args.sandboxId, { status: "active" });
   },
 });
