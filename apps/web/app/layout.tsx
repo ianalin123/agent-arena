@@ -4,6 +4,7 @@ import "./globals.css";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import { ReactNode } from "react";
 import dynamic from "next/dynamic";
+import { NavAddFunds } from "../components/NavAddFunds";
 
 const AppShell = dynamic(
   () => import("@/components/AppShell").then((m) => ({ default: m.AppShell })),

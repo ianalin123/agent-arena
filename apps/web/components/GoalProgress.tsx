@@ -124,6 +124,14 @@ export function GoalProgress({ sandbox }: GoalProgressProps) {
             ${sandbox.walletBalance?.toFixed(2) ?? "0.00"}
           </span>
         </div>
+        {(sandbox.agentEarningsUsd != null && sandbox.agentEarningsUsd > 0) && (
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+            <span style={{ color: "var(--ink-muted)" }}>Agent earnings (USD)</span>
+            <span style={{ fontFamily: "var(--font-dm-mono, 'DM Mono'), monospace", fontWeight: 500, color: "var(--green)" }}>
+              ${sandbox.agentEarningsUsd.toFixed(2)}
+            </span>
+          </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
           <span style={{ color: "var(--ink-muted)" }}>Model</span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>

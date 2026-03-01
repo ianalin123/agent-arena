@@ -14,6 +14,8 @@ export default defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
     balance: v.optional(v.number()),
+    /** Total usd_credits balance we've already synced from Autumn (so we don't double-credit). */
+    autumnBalanceSynced: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),
@@ -37,6 +39,8 @@ export default defineSchema({
     verificationHint: v.optional(v.string()),
     platform: v.optional(v.string()),
     accountHandle: v.optional(v.string()),
+    /** Agent earnings in USD (tracked when agent completes paid tasks / settles). */
+    agentEarningsUsd: v.optional(v.number()),
     createdAt: v.number(),
     expiresAt: v.number(),
     createdBy: v.id("users"),

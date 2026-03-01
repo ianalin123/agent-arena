@@ -43,6 +43,15 @@ export const getByEmail = query({
   },
 });
 
+/** First user id (for dev/demo when auth is not wired). */
+export const getFirstUserId = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await ctx.db.query("users").first();
+    return user?._id ?? null;
+  },
+});
+
 export const ensureTestUser = mutation({
   args: {
     name: v.string(),
@@ -84,6 +93,45 @@ export const addToBalance = internalMutation({
     if (!user) return;
     await ctx.db.patch(args.userId, {
       balance: (user.balance ?? 0) + args.amount,
+    });
+  },
+});
+
+/** Apply Autumn balance sync: credit (autumnCurrentBalance - already synced) so we don't double-credit. */
+export const syncAutumnBalance = internalMutation({
+  args: {
+    userId: v.id("users"),
+    autumnCurrentBalance: v.number(),
+  },
+  handler: async (ctx, args) => {
+    if (args.autumnCurrentBalance < 0) return;
+    const user = await ctx.db.get(args.userId);
+    if (!user) return;
+    const synced = user.autumnBalanceSynced ?? 0;
+    const toAdd = args.autumnCurrentBalance - synced;
+    if (toAdd <= 0) return;
+    await ctx.db.patch(args.userId, {
+      balance: user.balance + toAdd,
+      autumnBalanceSynced: args.autumnCurrentBalance,
+    });
+  },
+});
+
+/** Called by Stripe webhook to credit deposit by customer email. */
+export const addToBalanceByEmail = internalMutation({
+  args: {
+    email: v.string(),
+    amount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    if (args.amount <= 0) return;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+    if (!user) return;
+    await ctx.db.patch(user._id, {
+      balance: user.balance + args.amount,
     });
   },
 });

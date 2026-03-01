@@ -1,5 +1,9 @@
 # Stripe Integration for Agent Arena
 
+**Only what you must do:** See **[MUST_DO.md](./MUST_DO.md#stripe-buy-button--add-funds)** for the short list (Stripe account, Buy Button, `.env.local` keys, then run the webhook script once).
+
+---
+
 ## What Stripe Does Here
 
 - **Deposits (you need this first)**  
@@ -14,6 +18,29 @@
   - **Withdrawals (later):** When you’re ready, you can add “Withdraw” so users send balance to their bank/card via Stripe (payouts or Connect).
 
 So for now: **Stripe = “humans transfer money in.”** Redistribution and refunds are handled in Convex (with 5% take on settlement). Real payouts to bank/card can be added once deposits work.
+
+---
+
+## Add funds (Stripe Checkout) – main flow
+
+- **Nav → “Add funds”** opens a form; user enters amount and clicks Pay. The app creates a **Stripe Checkout** session (variable amount) and redirects to Stripe. After payment, Stripe sends **checkout.session.completed** to our **`/stripe-webhook`**; we credit the user’s balance by **email** (so the email at Checkout must match a Convex user’s email).
+- **Convex:** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are set. Action `stripeCheckout.createCheckout` creates the session; webhook credits via `users.addToBalanceByEmail`.
+- **Fix webhook URL if needed:** The setup script may have used a placeholder URL. In [Stripe → Developers → Webhooks](https://dashboard.stripe.com/webhooks), open your endpoint and set **Endpoint URL** to `https://<your-convex-deployment>.convex.site/stripe-webhook` (get the deployment URL from Convex dashboard → Settings → URL). Save.
+
+## Buy Button (optional)
+
+The nav can also show Stripe’s **Buy Button** (fixed-price product). Set `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_STRIPE_BUY_BUTTON_ID` in `apps/web/.env.local`. The same **`/stripe-webhook`** credits balance by email when that checkout completes.
+
+## Webhook setup (one-time)
+
+From the repo root, run (with your **real** Convex deployment URL in `apps/web/.env.local` as `NEXT_PUBLIC_CONVEX_URL`, or pass it):
+  ```bash
+  STRIPE_SECRET_KEY=sk_test_xxx node scripts/setup-stripe-webhook.mjs
+  # Or for live: STRIPE_SECRET_KEY=sk_live_xxx node scripts/setup-stripe-webhook.mjs
+  ```
+  Or set `CONVEX_WEBHOOK_URL=https://YOUR_DEPLOYMENT.convex.site/stripe-webhook` so the script registers the correct URL. The script creates the webhook in Stripe and sets `STRIPE_WEBHOOK_SECRET` in Convex.
+
+Customers must use the **same email** at Stripe Checkout as in your app (the one tied to their Convex user) so the webhook can match and credit the right account.
 
 ---
 

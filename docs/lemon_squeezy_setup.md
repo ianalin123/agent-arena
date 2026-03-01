@@ -2,6 +2,8 @@
 
 Use Lemon Squeezy so people can **deposit USD** (card/bank) into a shared “pot” and bet on agents. The platform (you) controls one Lemon Squeezy store; everyone pays into it, and you credit their in-app balance when payment succeeds. Payouts to users can be added later.
 
+**Only what you must do:** See **[MUST_DO.md](./MUST_DO.md#lemon-squeezy-add-funds)** for the short list (account, store, product, API key, webhook, then run `set-lemonsqueezy-env.mjs` once).
+
 ---
 
 ## 1. Create a Lemon Squeezy account and store
@@ -40,7 +42,13 @@ Use Lemon Squeezy so people can **deposit USD** (card/bank) into a shared “pot
 
 ## 4. Convex environment variables
 
-In Convex dashboard → **Settings** → **Environment Variables**, add:
+**One command (from repo root):**
+```bash
+node scripts/set-lemonsqueezy-env.mjs <API_KEY> <STORE_ID> <VARIANT_ID> <WEBHOOK_SECRET>
+```
+This sets all four Convex env vars. Or set the four env vars and run `node scripts/set-lemonsqueezy-env.mjs` with no args.
+
+Alternatively, in Convex dashboard → **Settings** → **Environment Variables**, add:
 
 | Variable | Description |
 |----------|-------------|
@@ -48,8 +56,6 @@ In Convex dashboard → **Settings** → **Environment Variables**, add:
 | `LEMON_SQUEEZY_STORE_ID` | Store ID (numeric string, e.g. `"12345"`). |
 | `LEMON_SQUEEZY_VARIANT_ID` | Variant ID for “Add funds” (numeric string, e.g. `"67890"`). |
 | `LEMON_SQUEEZY_WEBHOOK_SECRET` | Webhook signing secret (from step 3). |
-
-Redeploy or run `npx convex dev` so the functions see the new env.
 
 ---
 
@@ -97,4 +103,4 @@ async function handleAddFunds(amountDollars: number, userId: Id<"users">) {
 
 ## 8. Payouts
 
-Not implemented yet; you can add later (e.g. manual sends, or Lemon Squeezy / other payout options when available).
+Not implemented yet; you can add l                                                                                                                                                                                     ?

@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as autumnCheckout from "../autumnCheckout.js";
+import type * as autumnWebhook from "../autumnWebhook.js";
 import type * as betting from "../betting.js";
 import type * as browserUse from "../browserUse.js";
 import type * as credits from "../credits.js";
@@ -19,6 +21,8 @@ import type * as lemonsqueezy from "../lemonsqueezy.js";
 import type * as payments from "../payments.js";
 import type * as prompts from "../prompts.js";
 import type * as sandboxes from "../sandboxes.js";
+import type * as stripeCheckout from "../stripeCheckout.js";
+import type * as stripeWebhook from "../stripeWebhook.js";
 import type * as users from "../users.js";
 
 import type {
@@ -28,6 +32,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  autumnCheckout: typeof autumnCheckout;
+  autumnWebhook: typeof autumnWebhook;
   betting: typeof betting;
   browserUse: typeof browserUse;
   credits: typeof credits;
@@ -39,6 +45,8 @@ declare const fullApi: ApiFromModules<{
   payments: typeof payments;
   prompts: typeof prompts;
   sandboxes: typeof sandboxes;
+  stripeCheckout: typeof stripeCheckout;
+  stripeWebhook: typeof stripeWebhook;
   users: typeof users;
 }>;
 

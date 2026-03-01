@@ -1,6 +1,7 @@
 import {
   action,
   internalAction,
+  internalMutation,
   internalQuery,
   mutation,
   query,
@@ -360,5 +361,22 @@ export const resume = mutation({
       throw new Error(`Cannot resume sandbox with status "${sandbox.status}"`);
     }
     await ctx.db.patch(args.sandboxId, { status: "active" });
+  },
+});
+
+/** Credit USD earnings to the agent (e.g. on task completion or settlement). Call from event_bridge or settlement. */
+export const addAgentEarnings = internalMutation({
+  args: {
+    sandboxId: v.id("sandboxes"),
+    amountUsd: v.number(),
+  },
+  handler: async (ctx, args) => {
+    if (args.amountUsd <= 0) return;
+    const sandbox = await ctx.db.get(args.sandboxId);
+    if (!sandbox) return;
+    const current = sandbox.agentEarningsUsd ?? 0;
+    await ctx.db.patch(args.sandboxId, {
+      agentEarningsUsd: current + args.amountUsd,
+    });
   },
 });

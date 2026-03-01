@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -116,7 +117,6 @@ export const settle = mutation({
     const winningPool =
       winningPosition === "yes" ? pool.yesTotal : pool.noTotal;
 
-    // 5% platform take; 95% redistributed to winners
     const platformTakePct = 0.05;
     const platformTake = totalPool * platformTakePct;
     const prizePoolForWinners = totalPool - platformTake;
@@ -146,6 +146,12 @@ export const settle = mutation({
       bettingOpen: false,
       platformTake,
     });
+    if (platformTake > 0) {
+      await ctx.runMutation(internal.sandboxes.addAgentEarnings, {
+        sandboxId: args.sandboxId,
+        amountUsd: platformTake,
+      });
+    }
   },
 });
 
@@ -230,6 +236,12 @@ export const settleExpired = internalMutation({
       bettingOpen: false,
       platformTake,
     });
+    if (platformTake > 0) {
+      await ctx.runMutation(internal.sandboxes.addAgentEarnings, {
+        sandboxId: args.sandboxId,
+        amountUsd: platformTake,
+      });
+    }
   },
 });
 
