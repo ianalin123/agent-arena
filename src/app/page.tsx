@@ -17,7 +17,7 @@ import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE, UPCOMING_CHALLENGES } from "@/l
 
 // CDN URLs for all illustrated assets
 const ASSETS = {
-   badgeOpenai: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-openai-nobg_011fa039.png",
+   badgeChatGPT: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-chatgpt-nobg_b683b938.png",
   badgeClaude:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-claude-nobg_f2b8cdd4.png",
   badgeGemini:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-gemini-nobg_26ef172a.png",
   charsNobg:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
@@ -116,7 +116,7 @@ function HeroSection() {
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           {/* Illustrated odds badge stickers — above each character */}
           {/* OpenAI (left character) */}
-          <img src={ASSETS.badgeOpenai} alt="OpenAI 2.1x" style={{
+          <img src={ASSETS.badgeChatGPT} alt="ChatGPT 2.1x" style={{
             position: "absolute", top: "-2%", left: "2%",
             width: 110, height: "auto", objectFit: "contain",
             pointerEvents: "none",
