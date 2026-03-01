@@ -6,7 +6,22 @@ import { ConvexReactClient } from "convex/react";
 import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
 import { ReactNode, useState } from "react";
 import Link from "next/link";
-import { NavAuth } from "@/components/NavAuth";
+import dynamic from "next/dynamic";
+
+const NavAuth = dynamic(
+  () => import("@/components/NavAuth").then((m) => ({ default: m.NavAuth })),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="pill pill-neutral"
+        style={{ fontSize: 12, minWidth: 80, textAlign: "center" }}
+      >
+        ...
+      </div>
+    ),
+  },
+);
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
