@@ -5,7 +5,8 @@ Creates a test user and several demo sandboxes with different models
 competing on the same goal. Uses the Convex HTTP API directly.
 
 Usage:
-    python scripts/seed_convex.py
+    python scripts/seed_convex.py          # target prod
+    python scripts/seed_convex.py --dev    # target dev Convex deployment
 """
 
 import asyncio
@@ -16,9 +17,23 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "orchestrator")
 
 from dotenv import load_dotenv
 
-agent_env = os.path.join(os.path.dirname(__file__), "..", "agent", ".env")
-if os.path.exists(agent_env):
-    load_dotenv(agent_env)
+_root = os.path.join(os.path.dirname(__file__), "..")
+USE_DEV = "--dev" in sys.argv
+if USE_DEV:
+    sys.argv.remove("--dev")
+
+if USE_DEV:
+    _env_file = os.path.join(_root, ".env.local")
+    print(f"  env: DEV (loading {_env_file})")
+else:
+    _env_file = os.path.join(_root, "agent", ".env")
+    print(f"  env: PROD (loading {_env_file})")
+
+if os.path.exists(_env_file):
+    load_dotenv(_env_file)
+else:
+    print(f"WARNING: {_env_file} not found")
+    sys.exit(1)
 
 from event_bridge import EventBridge
 

@@ -178,9 +178,9 @@ export default function SandboxDetailPage({ params }: { params: Promise<{ id: st
           ← Back to Arena
         </Link>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "1.5rem", alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 380px", gap: "1.5rem", alignItems: "start" }}>
           {/* ── LEFT COLUMN ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", minWidth: 0 }}>
             {/* Browser view */}
             <div className="card-sm" style={{ padding: "1.25rem" }}>
               <VMWindow

@@ -15,6 +15,14 @@ crons.interval(
   internal.events.cleanup
 );
 
+// Claude-powered real-time odds assessor — runs every 10s on live challenges
+crons.interval(
+  "assess-odds-with-claude",
+  { seconds: 10 },
+  internal.oddsAssessor.assessAllActive
+);
+
+// Fallback: pure betting-pool snapshot every 30s
 crons.interval(
   "snapshot-odds-history",
   { seconds: 30 },
