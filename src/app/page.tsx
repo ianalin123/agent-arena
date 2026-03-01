@@ -17,7 +17,10 @@ import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE, UPCOMING_CHALLENGES } from "@/l
 
 // CDN URLs for all illustrated assets
 const ASSETS = {
-  charsNobg:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
+   badgeOpenai: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-openai-nobg_011fa039.png",
+  badgeClaude:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-claude-nobg_f2b8cdd4.png",
+  badgeGemini:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-gemini-nobg_26ef172a.png",
+  charsNobg:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
   logoIcon:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-v3-nobg_edbe6dfb.png",
   armWrestle:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/scene-armwrestle_cf44b035.png",
   betChips:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-bet-chips_ed9eca5a.png",
@@ -111,49 +114,25 @@ function HeroSection() {
         </div>
         {/* Right: characters running with floating odds badges */}
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          {/* Odds badges — positioned above each character's approximate location */}
-          {/* OpenAI (left character, ~20% from left) */}
-          <div style={{
-            position: "absolute", top: "2%", left: "8%",
-            background: "#1A1A1A", color: "#fff",
-            borderRadius: 8, padding: "0.3rem 0.6rem",
-            fontSize: "0.75rem", fontWeight: 800, fontFamily: "DM Mono, monospace",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
-            border: "2px solid #333",
-            letterSpacing: "-0.01em",
-          }}>
-            <span style={{ fontSize: "0.6rem", fontWeight: 600, opacity: 0.7, letterSpacing: "0.05em", textTransform: "uppercase" }}>OpenAI</span>
-            <span style={{ fontSize: "1rem", lineHeight: 1 }}>2.1x</span>
-          </div>
-          {/* Claude (middle character, ~48% from left) */}
-          <div style={{
-            position: "absolute", top: "0%", left: "40%",
-            background: "var(--claude)", color: "#fff",
-            borderRadius: 8, padding: "0.3rem 0.6rem",
-            fontSize: "0.75rem", fontWeight: 800, fontFamily: "DM Mono, monospace",
-            boxShadow: "0 2px 8px rgba(217,119,6,0.3)",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
-            border: "2px solid #B45309",
-            letterSpacing: "-0.01em",
-          }}>
-            <span style={{ fontSize: "0.6rem", fontWeight: 600, opacity: 0.85, letterSpacing: "0.05em", textTransform: "uppercase" }}>Claude</span>
-            <span style={{ fontSize: "1rem", lineHeight: 1 }}>1.8x</span>
-          </div>
-          {/* Gemini (right character, ~75% from left) */}
-          <div style={{
-            position: "absolute", top: "4%", left: "68%",
-            background: "var(--openai)", color: "#fff",
-            borderRadius: 8, padding: "0.3rem 0.6rem",
-            fontSize: "0.75rem", fontWeight: 800, fontFamily: "DM Mono, monospace",
-            boxShadow: "0 2px 8px rgba(37,99,235,0.3)",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
-            border: "2px solid #1D4ED8",
-            letterSpacing: "-0.01em",
-          }}>
-            <span style={{ fontSize: "0.6rem", fontWeight: 600, opacity: 0.85, letterSpacing: "0.05em", textTransform: "uppercase" }}>Gemini</span>
-            <span style={{ fontSize: "1rem", lineHeight: 1 }}>3.4x</span>
-          </div>
+          {/* Illustrated odds badge stickers — above each character */}
+          {/* OpenAI (left character) */}
+          <img src={ASSETS.badgeOpenai} alt="OpenAI 2.1x" style={{
+            position: "absolute", top: "-2%", left: "2%",
+            width: 110, height: "auto", objectFit: "contain",
+            pointerEvents: "none",
+          }} />
+          {/* Claude (centre character) */}
+          <img src={ASSETS.badgeClaude} alt="Claude 1.8x" style={{
+            position: "absolute", top: "-6%", left: "37%",
+            width: 110, height: "auto", objectFit: "contain",
+            pointerEvents: "none",
+          }} />
+          {/* Gemini (right character) */}
+          <img src={ASSETS.badgeGemini} alt="Gemini 3.4x" style={{
+            position: "absolute", top: "-1%", left: "68%",
+            width: 110, height: "auto", objectFit: "contain",
+            pointerEvents: "none",
+          }} />
           <img
             src={ASSETS.charsNobg}
             alt="Claude, OpenAI and Gemini racing"
