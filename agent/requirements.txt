@@ -9,3 +9,4 @@ httpx
 Pillow
 daytona
 python-dotenv
+pydantic

@@ -31,6 +31,20 @@ export const recent = query({
   },
 });
 
+export const listBySandbox = query({
+  args: {
+    sandboxId: v.id("sandboxes"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("agentEvents")
+      .withIndex("by_sandbox_time", (q) => q.eq("sandboxId", args.sandboxId))
+      .order("desc")
+      .take(args.limit ?? 50);
+  },
+});
+
 export const recentAll = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {

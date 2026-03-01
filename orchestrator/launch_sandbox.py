@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from dotenv import load_dotenv
 from event_bridge import EventBridge
+from goal_extractor import extract_goal
 from sandbox_manager import SandboxManager
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,16 @@ async def launch(args: argparse.Namespace) -> None:
 
     bridge = EventBridge(convex_url, convex_key)
 
+    logger.info("Extracting structured goal from challenge text...")
+    extracted = await extract_goal(args.goal)
+    goal_type = extracted.goal_type if args.goal_type == "general" else args.goal_type
+    target_value = extracted.target_value if args.target == 100 else args.target
+    time_limit = extracted.time_limit_seconds if args.time_limit == 7200 else args.time_limit
+    logger.info(
+        "Goal extracted: type=%s target=%s time=%ss constraints=%s",
+        goal_type, target_value, time_limit, extracted.constraints,
+    )
+
     logger.info("Creating sandbox record in Convex...")
     user_id = args.user_id
     if not user_id:
@@ -64,14 +75,20 @@ async def launch(args: argparse.Namespace) -> None:
 
     sandbox_id = await bridge._call_mutation("sandboxes:create", {
         "goalDescription": args.goal,
-        "goalType": args.goal_type,
-        "targetValue": args.target,
+        "goalType": goal_type,
+        "targetValue": target_value,
         "model": args.model,
-        "timeLimit": args.time_limit,
+        "timeLimit": time_limit,
         "initialCredits": args.credits,
         "userId": user_id,
+        "constraints": extracted.constraints,
+        "verificationHint": extracted.verification_hint,
+        "platform": extracted.platform,
+        "accountHandle": extracted.account_handle,
     })
     logger.info("Convex sandbox created: %s", sandbox_id)
+
+    inbox_id = await _create_agentmail_inbox()
 
     env_vars = {}
     for key in ENV_KEYS_TO_FORWARD:
@@ -82,12 +99,16 @@ async def launch(args: argparse.Namespace) -> None:
     sandbox_config = {
         "sandbox_id": sandbox_id,
         "goal": args.goal,
-        "goal_type": args.goal_type,
-        "target_value": args.target,
+        "goal_type": goal_type,
+        "target_value": target_value,
         "model": args.model,
-        "time_limit": args.time_limit,
+        "time_limit": time_limit,
         "initial_credits": args.credits,
-        "agentmail_inbox_id": "",
+        "constraints": extracted.constraints,
+        "verification_hint": extracted.verification_hint,
+        "platform": extracted.platform,
+        "account_handle": extracted.account_handle,
+        "agentmail_inbox_id": inbox_id,
         "paylocus_wallet_id": "",
     }
 
@@ -110,7 +131,7 @@ async def launch(args: argparse.Namespace) -> None:
         await bridge._call_mutation("sandboxes:updateAfterLaunch", {
             "sandboxId": sandbox_id,
             "daytonaSandboxId": daytona_id,
-            "agentmailInboxId": "",
+            "agentmailInboxId": inbox_id,
             "paylocusWalletId": "",
         })
     except Exception as e:
@@ -133,6 +154,24 @@ async def launch(args: argparse.Namespace) -> None:
     print(f"  Goal: {args.goal}")
     print(f"  Model: {args.model}")
     print("=" * 60 + "\n")
+
+
+async def _create_agentmail_inbox() -> str:
+    """Create a fresh AgentMail inbox for this sandbox."""
+    api_key = os.environ.get("AGENTMAIL_API_KEY", "")
+    if not api_key:
+        logger.warning("AGENTMAIL_API_KEY not set, skipping inbox creation")
+        return ""
+    try:
+        from agentmail import AsyncAgentMail
+        client = AsyncAgentMail(api_key=api_key)
+        inbox = await client.inboxes.create()
+        inbox_id = getattr(inbox, "id", "") or getattr(inbox, "inbox_id", "")
+        logger.info("AgentMail inbox created: %s", inbox_id)
+        return str(inbox_id)
+    except Exception as e:
+        logger.warning("Failed to create AgentMail inbox: %s", e)
+        return ""
 
 
 async def _ensure_test_user(bridge: EventBridge) -> str:

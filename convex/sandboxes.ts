@@ -152,6 +152,10 @@ export const create = mutation({
     timeLimit: v.number(),
     initialCredits: v.number(),
     userId: v.id("users"),
+    constraints: v.optional(v.array(v.string())),
+    verificationHint: v.optional(v.string()),
+    platform: v.optional(v.string()),
+    accountHandle: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -168,6 +172,10 @@ export const create = mutation({
       walletBalance: 0,
       timeLimit: args.timeLimit,
       creditsRemaining: args.initialCredits,
+      constraints: args.constraints,
+      verificationHint: args.verificationHint,
+      platform: args.platform,
+      accountHandle: args.accountHandle,
       createdAt: now,
       expiresAt: now + args.timeLimit * 1000,
       createdBy: args.userId,

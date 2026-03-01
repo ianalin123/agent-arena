@@ -1,8 +1,7 @@
 """Main agent loop — runs inside each Daytona sandbox.
 
-Uses native tool use APIs for structured LLM responses, Browser Use
-high-level task API with live_url streaming, and automatic model
-fallback on rate limits.
+Uses native tool use APIs with multi-turn message history, automatic model
+fallback on rate limits, and constraint enforcement.
 """
 
 import asyncio
@@ -10,6 +9,7 @@ import json
 import logging
 import os
 import sys
+import time
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -23,12 +23,14 @@ from tools.email import EmailTool
 from tools.payments import PaymentsTool
 from goal_verifier import GoalVerifier
 from memory import AgentMemory
+from prompts import build_user_prompt
 
 logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "orchestrator"))
 
 _bridge = None
+MAX_MESSAGES = 40
 
 
 def _get_bridge():
@@ -61,6 +63,27 @@ def _detect_loop(recent_actions: list[dict], window: int = 3) -> str | None:
     return None
 
 
+def _trim_messages(messages: list[dict], max_len: int = MAX_MESSAGES) -> list[dict]:
+    """Keep conversation within context window limits."""
+    if len(messages) <= max_len:
+        return messages
+    return [messages[0]] + messages[-(max_len - 1):]
+
+
+def _is_constrained(action_type: str, constraints: list[str]) -> str | None:
+    """Return a block reason if the action violates a constraint, else None."""
+    constraint_text = " ".join(constraints).lower()
+    if action_type in ("send_usdc", "send_usdc_email"):
+        for signal in ("no crypto", "don't use crypto", "no payment", "no usdc"):
+            if signal in constraint_text:
+                return f"Action '{action_type}' blocked by constraint: {signal}"
+    if action_type == "send_email":
+        for signal in ("no email", "don't send email", "don't use email"):
+            if signal in constraint_text:
+                return f"Action '{action_type}' blocked by constraint: {signal}"
+    return None
+
+
 async def run_agent(sandbox_config: dict):
     if os.environ.get("LMNR_PROJECT_API_KEY"):
         Laminar.initialize()
@@ -78,7 +101,9 @@ async def run_agent(sandbox_config: dict):
     sandbox_id = sandbox_config["sandbox_id"]
     goal = sandbox_config["goal"]
     credits = sandbox_config.get("initial_credits", 50)
+    constraints = sandbox_config.get("constraints", [])
     recent_actions: list[dict] = []
+    messages: list[dict] = []
 
     await browser.create_session()
 
@@ -90,7 +115,6 @@ async def run_agent(sandbox_config: dict):
         _live_url_pushed = True
 
     async def _poll_live_url():
-        """Background task: poll Browser Use for live_url and push to Convex ASAP."""
         nonlocal _live_url_pushed
         for _ in range(30):
             await asyncio.sleep(2)
@@ -150,17 +174,30 @@ async def run_agent(sandbox_config: dict):
                         logger.warning("Failed to acknowledge prompt %s: %s", prompt_id, e)
 
             stuck_hint = _detect_loop(recent_actions)
-            screenshot = ""
+
+            user_prompt = build_user_prompt(
+                goal,
+                wallet_balance=balance,
+                emails=emails,
+                memory=past_context,
+                user_prompts=user_prompts,
+                action_history=recent_actions,
+                stuck_hint=stuck_hint,
+                constraints=constraints,
+                time_remaining_seconds=verifier.remaining_seconds,
+                current_progress=verifier._current_progress,
+            )
+            messages.append({"role": "user", "content": user_prompt})
 
             await _push_event(sandbox_id, {
                 "step": len(recent_actions) + 1,
                 "status": "thinking",
             }, event_type="status")
 
-            decision = await _think_step_with_fallback(
-                fallback_chain, goal, screenshot, emails, balance,
-                past_context, user_prompts, recent_actions, stuck_hint,
-            )
+            decision = await _think_step_with_fallback(fallback_chain, messages)
+
+            if decision.raw_assistant_message:
+                messages.append(decision.raw_assistant_message)
 
             await _push_event(sandbox_id, {
                 "step": len(recent_actions) + 1,
@@ -169,7 +206,24 @@ async def run_agent(sandbox_config: dict):
                 "action_summary": str(decision.action.get("task", decision.action))[:120] if isinstance(decision.action, dict) else str(decision.action)[:120],
             }, event_type="status")
 
-            result = await _execute_action(decision, browser, mail, payments, sandbox_id)
+            block_reason = _is_constrained(decision.action_type, constraints)
+            if block_reason:
+                logger.info("Constraint blocked: %s", block_reason)
+                result = {"status": "blocked", "error": block_reason}
+            else:
+                result = await _execute_action(decision, browser, mail, payments, sandbox_id)
+
+            if decision.tool_use_id:
+                messages.append({
+                    "role": "user",
+                    "content": [{
+                        "type": "tool_result",
+                        "tool_use_id": decision.tool_use_id,
+                        "content": json.dumps(result, default=str)[:2000],
+                    }],
+                })
+
+            messages = _trim_messages(messages)
 
             if browser.live_url and not _live_url_pushed:
                 await _push_live_url(sandbox_id, browser.live_url, "")
@@ -285,23 +339,14 @@ async def _execute_action(
 
 @observe(name="agent_reasoning_step")
 async def _think_step_with_fallback(
-    fallback_chain, goal, screenshot, emails, balance,
-    past_context, user_prompts, recent_actions, stuck_hint,
+    fallback_chain,
+    messages: list[dict],
 ) -> Decision:
     """Try the primary provider, fall back to alternatives on failure."""
     last_error = None
     for provider in fallback_chain:
         try:
-            return await provider.think(
-                goal=goal,
-                screenshot=screenshot,
-                emails=emails,
-                wallet_balance=balance,
-                memory=past_context,
-                user_prompts=user_prompts,
-                action_history=recent_actions,
-                stuck_hint=stuck_hint,
-            )
+            return await provider.think(messages=messages)
         except Exception as e:
             provider_name = type(provider).__name__
             logger.warning("Provider %s failed: %s — trying fallback", provider_name, e)

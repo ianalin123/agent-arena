@@ -23,6 +23,8 @@ from pydantic import BaseModel
 sys.path.insert(0, os.path.dirname(__file__))
 
 from event_bridge import EventBridge
+from goal_extractor import extract_goal
+from judge import JudgeScheduler
 from sandbox_manager import SandboxManager
 
 agent_env = os.path.join(os.path.dirname(__file__), "..", "agent", ".env")
@@ -36,14 +38,27 @@ logging.basicConfig(
 )
 
 _manager: SandboxManager | None = None
+_judge: JudgeScheduler | None = None
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    global _manager
+    global _manager, _judge
     _manager = SandboxManager()
     logger.info("SandboxManager initialized")
+
+    convex_url = os.environ.get("CONVEX_URL", "")
+    convex_key = os.environ.get("CONVEX_DEPLOY_KEY", "")
+    if convex_url and convex_key:
+        _judge = JudgeScheduler(convex_url, convex_key)
+        _judge.start()
+        logger.info("JudgeScheduler started")
+
     yield
+
+    if _judge:
+        await _judge.stop()
+        logger.info("JudgeScheduler stopped")
     if _manager:
         await _manager.close()
         logger.info("SandboxManager closed")
@@ -80,6 +95,24 @@ class LaunchResponse(BaseModel):
     walletBalance: float | None = None
 
 
+async def _create_agentmail_inbox() -> str:
+    """Create a fresh AgentMail inbox for this sandbox."""
+    api_key = os.environ.get("AGENTMAIL_API_KEY", "")
+    if not api_key:
+        logger.warning("AGENTMAIL_API_KEY not set, skipping inbox creation")
+        return ""
+    try:
+        from agentmail import AsyncAgentMail
+        client = AsyncAgentMail(api_key=api_key)
+        inbox = await client.inboxes.create()
+        inbox_id = getattr(inbox, "id", "") or getattr(inbox, "inbox_id", "")
+        logger.info("AgentMail inbox created: %s", inbox_id)
+        return str(inbox_id)
+    except Exception as e:
+        logger.warning("Failed to create AgentMail inbox: %s", e)
+        return ""
+
+
 @app.post("/launch", response_model=LaunchResponse)
 async def launch_sandbox(req: LaunchRequest) -> LaunchResponse:
     """Create a Daytona sandbox, deploy agent code, and return IDs.
@@ -88,19 +121,36 @@ async def launch_sandbox(req: LaunchRequest) -> LaunchResponse:
     """
     logger.info("Launch request for sandbox %s (model=%s)", req.sandboxId, req.model)
 
+    extracted = await extract_goal(req.goalDescription)
+    logger.info(
+        "Goal extracted: type=%s target=%s constraints=%s",
+        extracted.goal_type, extracted.target_value, extracted.constraints,
+    )
+
+    inbox_id = await _create_agentmail_inbox()
+
     env_vars = {}
     for key in ENV_KEYS_TO_FORWARD:
         val = os.environ.get(key, "")
         if val:
             env_vars[key] = val
 
+    config_overrides = req.config or {}
     sandbox_config = {
         "sandbox_id": req.sandboxId,
         "goal": req.goalDescription,
+        "goal_type": config_overrides.get("goal_type", extracted.goal_type),
+        "target_value": config_overrides.get("target_value", extracted.target_value),
         "model": req.model,
-        "time_limit": req.timeLimit,
+        "time_limit": req.timeLimit or extracted.time_limit_seconds,
         "initial_credits": 50,
-        **(req.config or {}),
+        "constraints": extracted.constraints,
+        "verification_hint": extracted.verification_hint,
+        "platform": extracted.platform,
+        "account_handle": extracted.account_handle,
+        "agentmail_inbox_id": inbox_id,
+        "paylocus_wallet_id": "",
+        **config_overrides,
     }
 
     if _manager is None:
@@ -115,7 +165,7 @@ async def launch_sandbox(req: LaunchRequest) -> LaunchResponse:
 
     return LaunchResponse(
         daytonaSandboxId=daytona_id,
-        agentmailInboxId="",
+        agentmailInboxId=inbox_id,
         paylocusWalletId="",
         walletBalance=0,
     )
