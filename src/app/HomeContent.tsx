@@ -119,8 +119,6 @@ function ConvexChallengeCard({ challenge }: {
     targetValue: number;
     sessionNumber: number;
     status: string;
-    claudeSandboxId: Id<"sandboxes">;
-    openaiSandboxId: Id<"sandboxes">;
   }
 }) {
   const challengeId = challenge._id as Id<"challenges">;
@@ -128,21 +126,13 @@ function ConvexChallengeCard({ challenge }: {
   // Live odds + pool from Convex
   const odds = useQuery(api.betting.getOddsByChallenge, { challengeId });
 
-  // Full challenge data including sandbox progress
-  const challengeData = useQuery(api.challenges.get, { challengeId });
-  const claudeSandbox = challengeData?.claudeSandbox;
-  const openaiSandbox = challengeData?.openaiSandbox;
-
   const claudePct = odds?.claudePct ?? 0.5;
   const openaiPct = odds?.openaiPct ?? 0.5;
   const totalPool = odds?.totalPool ?? 0;
 
-  const claudeProgress = claudeSandbox
-    ? Math.min(100, (claudeSandbox.currentProgress / challenge.targetValue) * 100)
-    : 0;
-  const openaiProgress = openaiSandbox
-    ? Math.min(100, (openaiSandbox.currentProgress / challenge.targetValue) * 100)
-    : 0;
+  // Progress bars show 0% on the homepage card — full progress is on the challenge detail page
+  const claudeProgress = 0;
+  const openaiProgress = 0;
 
   const title = challenge.goalDescription || challenge.goalType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
