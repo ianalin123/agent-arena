@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "browser-use-convex-component": "^0.1.1",
-    "convex": "^1"
+    "convex": "^1",
+    "next": "^15"
   }
 }

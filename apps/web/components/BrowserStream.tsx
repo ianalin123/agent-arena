@@ -1,18 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/api";
 import type { Id } from "@/convex/types";
-
-const _DURL = "http://127.0.0.1:7405/ingest/4e79ba50-ea0a-47f3-988f-e806a4b369cf";
-function _dl(loc: string, msg: string, data: Record<string, unknown>, hyp: string) {
-  fetch(_DURL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "d46bd0" },
-    body: JSON.stringify({ sessionId: "d46bd0", location: loc, message: msg, data, timestamp: Date.now(), hypothesisId: hyp }),
-  }).catch(() => {});
-}
 
 interface BrowserStreamProps {
   sandboxId: string;
@@ -26,27 +17,11 @@ export function BrowserStream({ sandboxId, liveUrl, shareUrl }: BrowserStreamPro
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeError, setIframeError] = useState(false);
 
-  // #region agent log
-  const _mt = useRef(Date.now());
-  useEffect(() => {
-    _dl("BrowserStream.tsx:mount", "BrowserStream mounted", { sandboxId, liveUrl: liveUrl ?? null, shareUrl: shareUrl ?? null, streamUrl: streamUrl ?? null }, "A,D");
-  }, []);
-  useEffect(() => {
-    if (streamUrl) _dl("BrowserStream.tsx:streamUrl", "streamUrl available", { streamUrl, elapsedMs: Date.now() - _mt.current }, "A,D");
-  }, [streamUrl]);
-  // #endregion
-
   const handleIframeLoad = useCallback(() => {
-    // #region agent log
-    _dl("BrowserStream.tsx:iframeLoad", "iframe loaded", { elapsedMs: Date.now() - _mt.current }, "C,E");
-    // #endregion
     setIframeLoaded(true);
   }, []);
 
   const handleIframeError = useCallback(() => {
-    // #region agent log
-    _dl("BrowserStream.tsx:iframeError", "iframe error", { elapsedMs: Date.now() - _mt.current }, "E");
-    // #endregion
     setIframeError(true);
   }, []);
 
@@ -61,24 +36,11 @@ export function BrowserStream({ sandboxId, liveUrl, shareUrl }: BrowserStreamPro
 
   const screenshotUrl = latestScreenshot?.url ?? null;
 
-  // #region agent log
-  useEffect(() => {
-    _dl("BrowserStream.tsx:screenshot", "screenshotUrl state", { screenshotUrl, hasScreenshot: !!screenshotUrl, elapsedMs: Date.now() - _mt.current }, "B");
-  }, [screenshotUrl]);
-  // #endregion
-
   const showIframe = streamUrl && !iframeError;
   const showScreenshot = !showIframe && screenshotUrl;
   const showPlaceholder = !showIframe && !showScreenshot;
 
   const isLive = streamUrl && iframeLoaded && !iframeError;
-
-  // #region agent log
-  useEffect(() => {
-    const view = showIframe ? (iframeLoaded ? "iframe-live" : "iframe-loading") : showScreenshot ? "screenshot" : "placeholder";
-    _dl("BrowserStream.tsx:renderState", "current view state", { view, streamUrl: streamUrl ?? null, iframeLoaded, iframeError, screenshotUrl, elapsedMs: Date.now() - _mt.current }, "A,B,C,D");
-  }, [showIframe, showScreenshot, showPlaceholder, iframeLoaded]);
-  // #endregion
 
   return (
     <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
