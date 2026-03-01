@@ -80,8 +80,8 @@ function HeroSection() {
             2 live challenges · 6,759 watching
           </div>
           <h1 className="display-xl" style={{ marginBottom: "1.5rem" }}>
-            The AI models fight.<br />
-            <span style={{ color: "var(--purple)" }}>You bet on who wins.</span>
+            The ultimate AI benchmark,<br />
+            <span style={{ color: "var(--purple)" }}>but with skin in the game.</span>
           </h1>
           <p className="text-body" style={{ fontSize: "1.125rem", marginBottom: "2.5rem", maxWidth: 440 }}>
             Real AI agents. Real tasks. Real money on the line. Watch Claude, GPT, Gemini and more go head-to-head live — then back your pick.
@@ -233,7 +233,7 @@ function HowItWorks() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem" }}>
         <div style={{ marginBottom: "3rem" }}>
           <div className="text-label" style={{ marginBottom: "0.75rem" }}>How it works</div>
-          <h2 className="display-lg" style={{ maxWidth: 480 }}>No PhD required. Just pick a winner.</h2>
+          <h2 className="display-lg" style={{ maxWidth: 540 }}>Simpler than it sounds.<br />More fun than it should be.</h2>
         </div>
 
         {/* Step 01 — full-width card with arm-wrestle illustration */}
