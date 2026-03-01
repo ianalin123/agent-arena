@@ -21,13 +21,13 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE } from "@/lib/arena-data";
 
-// CDN URLs for illustrated decorative assets
+// CDN URLs for illustrated assets
 const ASSETS = {
+  logoIcon:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-icon-only_35688216.png",
   trophy:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png",
-  coins:     "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-coins-gRKVvNbSG8FexH48Sc22L3.png",
-  lightning: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-lightning-frb8awZxm2S3iFngnRghCe.png",
+  betChips:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-bet-chips_ed9eca5a.png",
+  chartUp:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-chart-up_23c5aab8.png",
   flag:      "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-flag-HRiHLcsyFyreE52oLXfiab.png",
-  computer:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-computer-km6smPaBCv98Jp2LQ3zJwd.png",
 };
 
 // ── Types ──────────────────────────────────────────
@@ -148,8 +148,8 @@ function Nav({ title }: { title: string }) {
     <nav className="nav">
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link href="/" className="btn-ghost" style={{ padding: "0.375rem 0.5rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-            <img src={ASSETS.flag} alt="" style={{ width: 20, height: 20, objectFit: "contain" }} />
+          <Link href="/" className="btn-ghost" style={{ padding: "0.375rem 0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <img src={ASSETS.logoIcon} alt="" style={{ height: 28, width: "auto", objectFit: "contain" }} />
             ← Back
           </Link>
           <div style={{ width: 1, height: 20, background: "var(--border)" }} />
@@ -177,9 +177,13 @@ function GoalBanner({ challenge, claudeProgress, openaiProgress, timeElapsed }: 
     <div className="goal-banner">
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-          <div>
-            <div className="text-label">Goal</div>
-            <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "var(--ink)" }}>{challenge.goal}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+            {/* flag illustration — represents the finish line / goal */}
+            <img src={ASSETS.flag} alt="" style={{ width: 28, height: 28, objectFit: "contain" }} />
+            <div>
+              <div className="text-label">Goal</div>
+              <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "var(--ink)" }}>{challenge.goal}</div>
+            </div>
           </div>
           <div style={{ width: 1, height: 32, background: "rgba(124,111,247,0.2)" }} />
           <div>
@@ -348,8 +352,11 @@ function ProbabilityChart({ chartData }: { chartData: ChartPoint[] }) {
   return (
     <div className="card-sm" style={{ padding: "1.25rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <div className="text-label" style={{ marginBottom: "0.25rem" }}>Win probability</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {/* chart-up illustration — directly represents the probability trend chart */}
+          <img src={ASSETS.chartUp} alt="" style={{ width: 36, height: 36, objectFit: "contain" }} />
+          <div>
+            <div className="text-label" style={{ marginBottom: "0.25rem" }}>Win probability</div>
           <div style={{ display: "flex", gap: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
               <div style={{ width: 12, height: 3, background: "var(--claude)", borderRadius: 2 }} />
@@ -359,6 +366,7 @@ function ProbabilityChart({ chartData }: { chartData: ChartPoint[] }) {
               <div style={{ width: 12, height: 3, background: "var(--openai)", borderRadius: 2 }} />
               <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--openai)" }}>OpenAI {lastPoint.openai.toFixed(0)}%</span>
             </div>
+          </div>
           </div>
         </div>
         <div style={{ display: "flex", gap: "0.375rem" }}>
@@ -422,9 +430,7 @@ function BetPanel({ challenge, claudeWin }: { challenge: typeof FOLLOWERS_CHALLE
   }
 
   return (
-    <div className="bet-panel" style={{ position: "relative", overflow: "hidden" }}>
-      {/* lightning deco top-right */}
-      <img src={ASSETS.lightning} alt="" style={{ position: "absolute", top: -10, right: -10, width: 70, height: 70, objectFit: "contain", opacity: 0.15, transform: "rotate(20deg)", pointerEvents: "none" }} />
+    <div className="bet-panel">
       <div style={{ marginBottom: "1.25rem" }}>
         <div className="text-label" style={{ marginBottom: "0.375rem" }}>Place your bet</div>
         <h3 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em" }}>
@@ -517,6 +523,13 @@ function BetPanel({ challenge, claudeWin }: { challenge: typeof FOLLOWERS_CHALLE
           <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)" }}>{challenge.viewers.toLocaleString()}</span>
         </div>
       </div>
+
+      {/* Bet chips illustration — shown after a bet is placed, celebrating the action */}
+      {placed && (
+        <div style={{ marginTop: "1rem", display: "flex", justifyContent: "center" }}>
+          <img src={ASSETS.betChips} alt="" style={{ width: 80, height: 80, objectFit: "contain", animation: "pop-in 0.3s ease-out" }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -634,9 +647,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
         timeElapsed={timeElapsed}
       />
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem", position: "relative" }}>
-        {/* faint trophy watermark behind content */}
-        <img src={ASSETS.trophy} alt="" style={{ position: "absolute", right: 0, top: 40, width: 180, height: 180, objectFit: "contain", opacity: 0.06, pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 340px", gap: "1.5rem", alignItems: "start" }}>
           {/* Claude column */}
           <div>
@@ -660,10 +671,12 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
             <ProbabilityChart chartData={chartData} />
           </div>
           {/* Session stats */}
-          <div className="card-sm" style={{ padding: "1.25rem", position: "relative", overflow: "hidden" }}>
-            {/* tiny coins deco */}
-            <img src={ASSETS.coins} alt="" style={{ position: "absolute", bottom: -8, right: -8, width: 64, height: 64, objectFit: "contain", opacity: 0.18, transform: "rotate(15deg)", pointerEvents: "none" }} />
-            <div className="text-label" style={{ marginBottom: "0.875rem" }}>Session stats</div>
+          <div className="card-sm" style={{ padding: "1.25rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", marginBottom: "0.875rem" }}>
+              {/* trophy illustration — directly represents the prize pool / session outcome */}
+              <img src={ASSETS.trophy} alt="" style={{ width: 28, height: 28, objectFit: "contain" }} />
+              <div className="text-label">Session stats</div>
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
               {[
                 { label: "Session", value: `#${challenge.sessionNumber}` },
