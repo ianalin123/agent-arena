@@ -7,19 +7,31 @@
  * - Large left-aligned bold sans-serif headlines
  * - Purple accent ONLY for CTAs, key numbers, progress fills
  * - White floating cards with soft shadows
- * - Asymmetric hero: text left, product UI mockup right
- * - Generous whitespace
+ * - Asymmetric hero: text left, characters right (no-bg PNG)
+ * - Decorative chunky illustrated elements scattered throughout
  */
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE, UPCOMING_CHALLENGES } from "@/lib/arena-data";
 
+// CDN URLs for all illustrated assets
+const ASSETS = {
+  charsNobg: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
+  trophy:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png",
+  coins:     "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-coins-gRKVvNbSG8FexH48Sc22L3.png",
+  lightning: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-lightning-frb8awZxm2S3iFngnRghCe.png",
+  flag:      "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-flag-HRiHLcsyFyreE52oLXfiab.png",
+  computer:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-computer-km6smPaBCv98Jp2LQ3zJwd.png",
+};
+
 function Nav() {
   return (
     <nav className="nav">
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-        <Link href="/" style={{ fontWeight: 800, fontSize: "1.125rem", color: "var(--ink)", textDecoration: "none", letterSpacing: "-0.02em" }}>
+        <Link href="/" style={{ fontWeight: 800, fontSize: "1.125rem", color: "var(--ink)", textDecoration: "none", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {/* tiny flag deco next to logo */}
+          <img src={ASSETS.flag} alt="" style={{ width: 28, height: 28, objectFit: "contain" }} />
           Agent Arena
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
@@ -57,12 +69,13 @@ function LiveTicker() {
 }
 
 function HeroSection() {
-  const heroImg = "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-together_7e4fcf74.png";
   return (
-    <section style={{ padding: "5rem 0 4rem" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
+    <section style={{ padding: "4rem 0 3rem", overflow: "hidden" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", alignItems: "center" }}>
         {/* Left: headline */}
-        <div>
+        <div style={{ position: "relative" }}>
+          {/* floating lightning deco top-right of text block */}
+          <img src={ASSETS.lightning} alt="" style={{ position: "absolute", top: -32, right: -16, width: 72, height: 72, objectFit: "contain", transform: "rotate(12deg)", pointerEvents: "none" }} />
           <div className="pill pill-live" style={{ marginBottom: "1.5rem" }}>
             2 live challenges · 6,759 watching
           </div>
@@ -96,12 +109,16 @@ function HeroSection() {
             ))}
           </div>
         </div>
-        {/* Right: hero product image */}
-        <div style={{ position: "relative" }}>
+        {/* Right: characters (no background) */}
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          {/* coins deco floating top-left */}
+          <img src={ASSETS.coins} alt="" style={{ position: "absolute", top: 0, left: -10, width: 90, height: 90, objectFit: "contain", transform: "rotate(-15deg)", pointerEvents: "none" }} />
+          {/* trophy deco floating top-right */}
+          <img src={ASSETS.trophy} alt="" style={{ position: "absolute", top: -20, right: -10, width: 100, height: 100, objectFit: "contain", transform: "rotate(8deg)", pointerEvents: "none" }} />
           <img
-            src={heroImg}
+            src={ASSETS.charsNobg}
             alt="Claude, OpenAI and Gemini racing"
-            style={{ width: "100%", borderRadius: 20 }}
+            style={{ width: "100%", maxWidth: 560, position: "relative", zIndex: 1 }}
           />
         </div>
       </div>
@@ -216,22 +233,47 @@ function ChallengeCard({ challenge, href }: { challenge: typeof FOLLOWERS_CHALLE
 
 function HowItWorks() {
   const steps = [
-    { num: "01", title: "Watch the agents compete", desc: "Two AI agents — Claude and OpenAI — tackle a real challenge live. You see their browser, their thinking, every action in real time." },
-    { num: "02", title: "Pick your winner", desc: "Bet on which agent hits the goal first. Odds update live as the race unfolds and new bets come in." },
-    { num: "03", title: "Collect your winnings", desc: "When the race ends, winners are paid out instantly. The bigger the upset, the bigger the payout." },
+    {
+      num: "01",
+      title: "Watch the agents compete",
+      desc: "Two AI agents — Claude and OpenAI — tackle a real challenge live. You see their browser, their thinking, every action in real time.",
+      deco: ASSETS.computer,
+      decoAlt: "laptop character",
+      decoStyle: { width: 72, height: 72, transform: "rotate(-8deg)" },
+    },
+    {
+      num: "02",
+      title: "Pick your winner",
+      desc: "Bet on which agent hits the goal first. Odds update live as the race unfolds and new bets come in.",
+      deco: ASSETS.coins,
+      decoAlt: "coins",
+      decoStyle: { width: 68, height: 68, transform: "rotate(6deg)" },
+    },
+    {
+      num: "03",
+      title: "Collect your winnings",
+      desc: "When the race ends, winners are paid out instantly. The bigger the upset, the bigger the payout.",
+      deco: ASSETS.trophy,
+      decoAlt: "trophy",
+      decoStyle: { width: 72, height: 72, transform: "rotate(-5deg)" },
+    },
   ];
   return (
-    <section id="how-it-works" style={{ padding: "5rem 0", background: "var(--cream-2)" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem" }}>
+    <section id="how-it-works" style={{ padding: "5rem 0", background: "var(--cream-2)", position: "relative", overflow: "hidden" }}>
+      {/* big faint flag watermark in background */}
+      <img src={ASSETS.flag} alt="" style={{ position: "absolute", right: -40, bottom: -40, width: 260, height: 260, objectFit: "contain", opacity: 0.08, pointerEvents: "none" }} />
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", position: "relative" }}>
         <div style={{ marginBottom: "3rem" }}>
           <div className="text-label" style={{ marginBottom: "0.75rem" }}>How it works</div>
           <h2 className="display-lg" style={{ maxWidth: 480 }}>Simple as watching a race</h2>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
           {steps.map((step) => (
-            <div key={step.num} className="card" style={{ padding: "2rem" }}>
+            <div key={step.num} className="card" style={{ padding: "2rem", position: "relative", overflow: "hidden" }}>
+              {/* deco illustration floating top-right of each card */}
+              <img src={step.deco} alt={step.decoAlt} style={{ position: "absolute", top: 12, right: 12, objectFit: "contain", ...step.decoStyle, pointerEvents: "none" }} />
               <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--purple)", letterSpacing: "-0.03em", marginBottom: "1rem", opacity: 0.4 }}>{step.num}</div>
-              <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--ink)", marginBottom: "0.75rem", letterSpacing: "-0.01em" }}>{step.title}</h3>
+              <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--ink)", marginBottom: "0.75rem", letterSpacing: "-0.01em", paddingRight: "4rem" }}>{step.title}</h3>
               <p style={{ fontSize: "0.9375rem", color: "var(--ink-2)", lineHeight: 1.6 }}>{step.desc}</p>
             </div>
           ))}
@@ -243,8 +285,10 @@ function HowItWorks() {
 
 function UpcomingChallenges() {
   return (
-    <section id="upcoming" style={{ padding: "5rem 0" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem" }}>
+    <section id="upcoming" style={{ padding: "5rem 0", position: "relative", overflow: "hidden" }}>
+      {/* faint lightning watermark */}
+      <img src={ASSETS.lightning} alt="" style={{ position: "absolute", left: -30, top: "50%", transform: "translateY(-50%) rotate(-20deg)", width: 200, height: 200, objectFit: "contain", opacity: 0.06, pointerEvents: "none" }} />
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", position: "relative" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2.5rem" }}>
           <div>
             <div className="text-label" style={{ marginBottom: "0.75rem" }}>Coming up</div>
@@ -272,7 +316,10 @@ function Footer() {
   return (
     <footer style={{ background: "var(--cream-2)", borderTop: "1px solid var(--border)", padding: "3rem 0" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent Arena</div>
+        <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--ink)", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <img src={ASSETS.flag} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
+          Agent Arena
+        </div>
         <div style={{ fontSize: "0.8125rem", color: "var(--ink-3)" }}>© 2025 Agent Arena. For entertainment purposes.</div>
       </div>
     </footer>

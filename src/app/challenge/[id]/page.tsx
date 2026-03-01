@@ -21,6 +21,15 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE } from "@/lib/arena-data";
 
+// CDN URLs for illustrated decorative assets
+const ASSETS = {
+  trophy:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png",
+  coins:     "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-coins-gRKVvNbSG8FexH48Sc22L3.png",
+  lightning: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-lightning-frb8awZxm2S3iFngnRghCe.png",
+  flag:      "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-flag-HRiHLcsyFyreE52oLXfiab.png",
+  computer:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-computer-km6smPaBCv98Jp2LQ3zJwd.png",
+};
+
 // ── Types ──────────────────────────────────────────
 interface AgentState {
   winPct: number;
@@ -139,7 +148,8 @@ function Nav({ title }: { title: string }) {
     <nav className="nav">
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link href="/" className="btn-ghost" style={{ padding: "0.375rem 0.5rem" }}>
+          <Link href="/" className="btn-ghost" style={{ padding: "0.375rem 0.5rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+            <img src={ASSETS.flag} alt="" style={{ width: 20, height: 20, objectFit: "contain" }} />
             ← Back
           </Link>
           <div style={{ width: 1, height: 20, background: "var(--border)" }} />
@@ -412,7 +422,9 @@ function BetPanel({ challenge, claudeWin }: { challenge: typeof FOLLOWERS_CHALLE
   }
 
   return (
-    <div className="bet-panel">
+    <div className="bet-panel" style={{ position: "relative", overflow: "hidden" }}>
+      {/* lightning deco top-right */}
+      <img src={ASSETS.lightning} alt="" style={{ position: "absolute", top: -10, right: -10, width: 70, height: 70, objectFit: "contain", opacity: 0.15, transform: "rotate(20deg)", pointerEvents: "none" }} />
       <div style={{ marginBottom: "1.25rem" }}>
         <div className="text-label" style={{ marginBottom: "0.375rem" }}>Place your bet</div>
         <h3 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em" }}>
@@ -622,7 +634,9 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
         timeElapsed={timeElapsed}
       />
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem", position: "relative" }}>
+        {/* faint trophy watermark behind content */}
+        <img src={ASSETS.trophy} alt="" style={{ position: "absolute", right: 0, top: 40, width: 180, height: 180, objectFit: "contain", opacity: 0.06, pointerEvents: "none", zIndex: 0 }} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 340px", gap: "1.5rem", alignItems: "start" }}>
           {/* Claude column */}
           <div>
@@ -646,7 +660,9 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
             <ProbabilityChart chartData={chartData} />
           </div>
           {/* Session stats */}
-          <div className="card-sm" style={{ padding: "1.25rem" }}>
+          <div className="card-sm" style={{ padding: "1.25rem", position: "relative", overflow: "hidden" }}>
+            {/* tiny coins deco */}
+            <img src={ASSETS.coins} alt="" style={{ position: "absolute", bottom: -8, right: -8, width: 64, height: 64, objectFit: "contain", opacity: 0.18, transform: "rotate(15deg)", pointerEvents: "none" }} />
             <div className="text-label" style={{ marginBottom: "0.875rem" }}>Session stats</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
               {[
