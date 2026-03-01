@@ -29,13 +29,12 @@ function Nav() {
   return (
     <nav className="nav">
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.625rem" }}>
-          {/* stacked wordmark: icon height matches top of "Agent" to bottom of "Arena" */}
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+          <img src={ASSETS.logoIcon} alt="Agent Arena" style={{ height: 34, width: 34, objectFit: "contain" }} />
           <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
             <span style={{ fontWeight: 800, fontSize: "1rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent</span>
             <span style={{ fontWeight: 800, fontSize: "1rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Arena</span>
           </div>
-          <img src={ASSETS.logoIcon} alt="Agent Arena" style={{ height: 44, width: 44, objectFit: "contain", order: -1 }} />
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
           <a href="#how-it-works" className="nav-link">How it works</a>
@@ -314,8 +313,8 @@ function Footer() {
   return (
     <footer style={{ background: "var(--cream-2)", borderTop: "1px solid var(--border)", padding: "3rem 0" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <img src={ASSETS.logoIcon} alt="" style={{ height: 36, width: 36, objectFit: "contain" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+          <img src={ASSETS.logoIcon} alt="" style={{ height: 28, width: 28, objectFit: "contain" }} />
           <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
             <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent</span>
             <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Arena</span>
