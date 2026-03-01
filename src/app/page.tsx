@@ -3,7 +3,7 @@
 /*
  * page.tsx — Landing Page
  * Design: Yonder/Kota aesthetic
- * - Warm cream background (#F0EDE8)
+ * - Pastel beige background (#F5F0E0)
  * - Large left-aligned bold sans-serif headlines
  * - Purple accent ONLY for CTAs, key numbers, progress fills
  * - White floating cards with soft shadows

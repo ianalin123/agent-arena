@@ -1,6 +1,6 @@
 /*
  * Agent Arena — Global Design System
- * Aesthetic: Yonder / Kota — warm cream canvas, dark near-black text, purple-only accent
+ * Aesthetic: Yonder / Kota — pastel beige canvas (#F5F0E0), dark near-black text, purple-only accent
  */
 
 @tailwind base;
@@ -8,9 +8,9 @@
 @tailwind utilities;
 
 :root {
-  --cream:        #F0EDE8;
-  --cream-2:      #E8E4DE;
-  --cream-3:      #DDD8D0;
+  --cream:        #F5F0E0;
+  --cream-2:      #EDE8D5;
+  --cream-3:      #E0D9C4;
   --white:        #FFFFFF;
   --ink:          #1A1A1A;
   --ink-2:        #4A4A4A;
@@ -20,8 +20,8 @@
   --purple-dark:  #5B50D6;
   --purple-2:     #EDE9FE;
   --purple-3:     #F5F3FF;
-  --border:       #E2DDD8;
-  --border-2:     #CCC7C0;
+  --border:       #DDD6C0;
+  --border-2:     #C8BFA8;
   --shadow-sm:    0 1px 4px rgba(0,0,0,0.05);
   --shadow:       0 2px 12px rgba(0,0,0,0.07);
   --shadow-md:    0 4px 24px rgba(0,0,0,0.09);
@@ -266,7 +266,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: #F5F4F1;
+  background: var(--cream-2);
   border-bottom: 1px solid var(--border);
   height: 40px;
 }
