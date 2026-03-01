@@ -57,7 +57,7 @@ function LiveTicker() {
 }
 
 function HeroSection() {
-  const heroImg = "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/hero-product-mockup-TiZNx4smsZYAyqSHhbPLuU.webp";
+  const heroImg = "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-together_7e4fcf74.png";
   return (
     <section style={{ padding: "5rem 0 4rem" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
@@ -100,8 +100,8 @@ function HeroSection() {
         <div style={{ position: "relative" }}>
           <img
             src={heroImg}
-            alt="Agent Arena product preview"
-            style={{ width: "100%", borderRadius: 20, boxShadow: "var(--shadow-lg)" }}
+            alt="Claude, OpenAI and Gemini racing"
+            style={{ width: "100%", borderRadius: 20 }}
           />
         </div>
       </div>
