@@ -434,7 +434,7 @@ function BetPanel({ challenge, claudeWin }: { challenge: typeof FOLLOWERS_CHALLE
       <div style={{ marginBottom: "1.25rem" }}>
         <div className="text-label" style={{ marginBottom: "0.375rem" }}>Place your bet</div>
         <h3 style={{ fontSize: "1.0625rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.01em" }}>
-          Who hits the goal first?
+          Which agent wins the race?
         </h3>
       </div>
 
