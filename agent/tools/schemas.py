@@ -48,25 +48,53 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "make_payment",
-        "description": "Send a cryptocurrency payment from the agent's wallet.",
+        "name": "send_usdc",
+        "description": (
+            "Send USDC from the agent's wallet to a Base wallet address. "
+            "Use this to pay for services, tip people, or transfer funds on-chain."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
+                "to_address": {
+                    "type": "string",
+                    "description": "Recipient wallet address on Base (0x...)",
+                },
                 "amount": {
                     "type": "number",
-                    "description": "Amount to send in USD",
+                    "description": "Amount of USDC to send",
                 },
-                "recipient": {
-                    "type": "string",
-                    "description": "Recipient wallet address (0x...)",
-                },
-                "description": {
+                "memo": {
                     "type": "string",
                     "description": "Description of what this payment is for",
                 },
             },
-            "required": ["amount", "recipient", "description"],
+            "required": ["to_address", "amount", "memo"],
+        },
+    },
+    {
+        "name": "send_usdc_email",
+        "description": (
+            "Send USDC to someone via their email address. Funds are held in escrow "
+            "until the recipient claims them — no wallet needed on their end."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "description": "Recipient email address",
+                },
+                "amount": {
+                    "type": "number",
+                    "description": "Amount of USDC to send",
+                },
+                "memo": {
+                    "type": "string",
+                    "description": "Description of what this payment is for",
+                },
+            },
+            "required": ["email", "amount", "memo"],
         },
     },
     {

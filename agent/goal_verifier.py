@@ -92,19 +92,18 @@ class GoalVerifier:
         return self._current_progress
 
     async def _check_revenue(self) -> float:
-        """Check revenue via Paylocus wallet transaction totals."""
+        """Check revenue via Locus wallet transaction totals."""
         from tools.payments import PaymentsTool
-        wallet_id = self.config.get("paylocus_wallet_id", "")
-        if not wallet_id:
-            return self._current_progress
 
         try:
-            tool = PaymentsTool(wallet_id=wallet_id)
+            tool = PaymentsTool()
+            if not tool._available:
+                return self._current_progress
             history = await tool.get_transaction_history()
             total_earned = sum(
-                float(tx.get("amount", 0))
+                float(tx.get("amount_usdc", 0))
                 for tx in history
-                if tx.get("direction") == "incoming"
+                if tx.get("status") == "SUCCESS"
             )
             await tool.close()
             return total_earned

@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const create = mutation({
@@ -40,5 +40,21 @@ export const updateBalance = mutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.userId, { balance: args.balance });
+  },
+});
+
+/** Called by Lemon Squeezy webhook (or other server code) to credit deposit. */
+export const addToBalance = internalMutation({
+  args: {
+    userId: v.id("users"),
+    amount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    if (args.amount <= 0) return;
+    const user = await ctx.db.get(args.userId);
+    if (!user) return;
+    await ctx.db.patch(args.userId, {
+      balance: user.balance + args.amount,
+    });
   },
 });

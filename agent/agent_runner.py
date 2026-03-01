@@ -71,7 +71,7 @@ async def run_agent(sandbox_config: dict):
 
     browser = BrowserTool()
     mail = EmailTool(inbox_id=sandbox_config.get("agentmail_inbox_id", ""))
-    payments = PaymentsTool(wallet_id=sandbox_config.get("paylocus_wallet_id", ""))
+    payments = PaymentsTool()
     memory = AgentMemory(api_key=os.environ.get("SUPERMEMORY_API_KEY", ""))
     verifier = GoalVerifier(sandbox_config)
 
@@ -216,13 +216,27 @@ async def _execute_action(
             }, event_type="email")
             return result
 
-        elif decision.action_type == "make_payment":
-            result = await payments.transact(decision.action)
+        elif decision.action_type == "send_usdc":
+            result = await payments.send_usdc(decision.action)
             await _push_event(sandbox_id, {
                 "type": "payment",
+                "method": "address",
                 "amount": decision.action.get("amount", 0),
-                "description": decision.action.get("description", ""),
-                "recipient": decision.action.get("recipient", ""),
+                "memo": decision.action.get("memo", ""),
+                "to_address": decision.action.get("to_address", ""),
+                "status": result.get("status", ""),
+            }, event_type="payment")
+            return result
+
+        elif decision.action_type == "send_usdc_email":
+            result = await payments.send_usdc_email(decision.action)
+            await _push_event(sandbox_id, {
+                "type": "payment",
+                "method": "email",
+                "amount": decision.action.get("amount", 0),
+                "memo": decision.action.get("memo", ""),
+                "email": decision.action.get("email", ""),
+                "status": result.get("status", ""),
             }, event_type="payment")
             return result
 

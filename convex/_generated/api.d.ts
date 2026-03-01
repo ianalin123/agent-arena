@@ -14,6 +14,8 @@ import type * as credits from "../credits.js";
 import type * as crons from "../crons.js";
 import type * as emails from "../emails.js";
 import type * as events from "../events.js";
+import type * as http from "../http.js";
+import type * as lemonsqueezy from "../lemonsqueezy.js";
 import type * as payments from "../payments.js";
 import type * as prompts from "../prompts.js";
 import type * as sandboxes from "../sandboxes.js";
@@ -32,6 +34,8 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   emails: typeof emails;
   events: typeof events;
+  http: typeof http;
+  lemonsqueezy: typeof lemonsqueezy;
   payments: typeof payments;
   prompts: typeof prompts;
   sandboxes: typeof sandboxes;

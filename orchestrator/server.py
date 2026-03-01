@@ -1,5 +1,8 @@
 """Orchestrator HTTP server — exposes POST /launch for the Convex sandboxes.launch action.
 
+Also exposes an x402-compliant route for Locus: when called without payment,
+returns 402 Payment Required with accepts[]; when called with PAYMENT-SIGNATURE, returns 200.
+
 Usage:
     uvicorn orchestrator.server:app --host 0.0.0.0 --port 8000
 
@@ -12,7 +15,8 @@ import os
 import sys
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -40,6 +44,7 @@ ENV_KEYS_TO_FORWARD = [
     "AGENTMAIL_API_KEY",
     "SUPERMEMORY_API_KEY",
     "LMNR_PROJECT_API_KEY",
+    "LOCUS_API_KEY",
     "CONVEX_URL",
     "CONVEX_DEPLOY_KEY",
 ]
@@ -105,6 +110,55 @@ async def launch_sandbox(req: LaunchRequest) -> LaunchResponse:
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# --- x402 (Locus) pay-per-call ---
+# Register with Locus. Point ngrok at this server (port 8000), not Next.js (3000).
+# Set X402_PAY_TO_ADDRESS (your Base wallet).
+
+X402_PAY_TO = os.environ.get("X402_PAY_TO_ADDRESS", "0x0000000000000000000000000000000000000000")
+X402_NETWORK = os.environ.get("X402_NETWORK", "base-sepolia")
+X402_MAX_AMOUNT = os.environ.get("X402_MAX_AMOUNT_REQUIRED", "1000")
+
+
+def _x402_accepts_payload(resource_url: str) -> dict:
+    return {
+        "accepts": [
+            {
+                "scheme": "exact",
+                "network": X402_NETWORK,
+                "maxAmountRequired": X402_MAX_AMOUNT,
+                "resource": resource_url,
+                "payTo": X402_PAY_TO,
+                "mimeType": "application/json",
+                "description": "Agent Arena paid resource (x402)",
+            }
+        ]
+    }
+
+
+@app.get("/x402/test-402")
+async def x402_test(request: Request):
+    """Always returns 402. Use to verify your tunnel hits this server: curl -i https://YOUR-NGROK/x402/test-402"""
+    body = _x402_accepts_payload(str(request.url))
+    return JSONResponse(status_code=402, content=body, media_type="application/json")
+
+
+@app.get("/x402/paid-resource")
+@app.post("/x402/paid-resource")
+async def x402_paid_resource(request: Request):
+    """x402: 402 when no valid payment; 200 only with real PAYMENT-SIGNATURE."""
+    resource_url = str(request.url)
+    # Only accept explicit payment header; ignore empty or short values
+    raw = request.headers.get("payment-signature") or request.headers.get("PAYMENT-SIGNATURE") or ""
+    has_payment = bool(raw and raw.strip() and len(raw.strip()) >= 32)
+
+    if not has_payment:
+        logger.info("x402 paid-resource: no payment → 402")
+        return JSONResponse(status_code=402, content=_x402_accepts_payload(resource_url), media_type="application/json")
+
+    logger.info("x402 paid-resource: payment present → 200")
+    return JSONResponse(status_code=200, content={"status": "ok", "message": "Payment accepted"}, media_type="application/json")
 
 
 if __name__ == "__main__":

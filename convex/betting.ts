@@ -113,6 +113,11 @@ export const settle = mutation({
     const winningPool =
       winningPosition === "yes" ? pool.yesTotal : pool.noTotal;
 
+    // 5% platform take; 95% redistributed to winners
+    const platformTakePct = 0.05;
+    const platformTake = totalPool * platformTakePct;
+    const prizePoolForWinners = totalPool - platformTake;
+
     const bets = await ctx.db
       .query("bets")
       .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
@@ -121,7 +126,7 @@ export const settle = mutation({
     for (const bet of bets) {
       const payout =
         winningPool > 0 && bet.position === winningPosition
-          ? (bet.amount / winningPool) * totalPool
+          ? (bet.amount / winningPool) * prizePoolForWinners
           : 0;
 
       await ctx.db.patch(bet._id, { settled: true, payout });
@@ -134,7 +139,10 @@ export const settle = mutation({
       }
     }
 
-    await ctx.db.patch(pool._id, { bettingOpen: false });
+    await ctx.db.patch(pool._id, {
+      bettingOpen: false,
+      platformTake,
+    });
   },
 });
 
@@ -193,6 +201,10 @@ export const settleExpired = internalMutation({
 
     const totalPool = pool.yesTotal + pool.noTotal;
     const winningPool = pool.noTotal;
+    const platformTakePct = 0.05;
+    const platformTake = totalPool * platformTakePct;
+    const prizePoolForWinners = totalPool - platformTake;
+
     const bets = await ctx.db
       .query("bets")
       .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
@@ -201,7 +213,7 @@ export const settleExpired = internalMutation({
     for (const bet of bets) {
       const payout =
         winningPool > 0 && bet.position === "no"
-          ? (bet.amount / winningPool) * totalPool
+          ? (bet.amount / winningPool) * prizePoolForWinners
           : 0;
       await ctx.db.patch(bet._id, { settled: true, payout });
       if (payout > 0) {
@@ -211,7 +223,10 @@ export const settleExpired = internalMutation({
         }
       }
     }
-    await ctx.db.patch(pool._id, { bettingOpen: false });
+    await ctx.db.patch(pool._id, {
+      bettingOpen: false,
+      platformTake,
+    });
   },
 });
 

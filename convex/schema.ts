@@ -43,6 +43,8 @@ export default defineSchema({
     yesTotal: v.number(),
     noTotal: v.number(),
     bettingOpen: v.boolean(),
+    /** Platform take (5% of prize pool) recorded after settlement. */
+    platformTake: v.optional(v.number()),
   }).index("by_sandbox", ["sandboxId"]),
 
   creditTransactions: defineTable({
