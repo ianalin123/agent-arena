@@ -51,6 +51,16 @@ export const getChallengeContext = internalQuery({
       .order("desc")
       .first();
 
+    // Determine the timestamp of the last assessment (or 0 if never assessed)
+    const lastAssessedAt = lastOdds?.timestamp ?? 0;
+
+    // Check if there are any new events since the last assessment
+    const latestClaudeEvent = claudeEvents[0];
+    const latestOpenaiEvent = openaiEvents[0];
+    const hasNewEvents =
+      (latestClaudeEvent && latestClaudeEvent.timestamp > lastAssessedAt) ||
+      (latestOpenaiEvent && latestOpenaiEvent.timestamp > lastAssessedAt);
+
     return {
       challenge,
       claudeSandbox,
@@ -59,6 +69,7 @@ export const getChallengeContext = internalQuery({
       openaiEvents,
       pool,
       lastOdds,
+      hasNewEvents,
     };
   },
 });
@@ -131,7 +142,13 @@ async function assessChallenge(
   const data = await ctx.runQuery(internal.oddsAssessor.getChallengeContext, { challengeId });
   if (!data) return;
 
-  const { challenge, claudeSandbox, openaiSandbox, claudeEvents, openaiEvents, pool, lastOdds } = data;
+  const { challenge, claudeSandbox, openaiSandbox, claudeEvents, openaiEvents, pool, lastOdds, hasNewEvents } = data;
+
+  // Skip assessment if no new agent events have been recorded since the last assessment
+  if (!hasNewEvents) {
+    console.log(`[oddsAssessor] ${challengeId}: no new events since last assessment — skipping Claude call`);
+    return;
+  }
 
   // Current odds baseline: use last recorded odds or 50/50
   const baseClaudePct = lastOdds?.claudePct ?? 50;
