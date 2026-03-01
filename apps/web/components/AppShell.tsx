@@ -1,7 +1,7 @@
 "use client";
 
 import { ConvexReactClient } from "convex/react";
-import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ReactNode, useState } from "react";
 import Link from "next/link";
 import { NavAuth } from "@/components/NavAuth";
@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ConvexAuthNextjsProvider client={client}>
+    <ConvexAuthProvider client={client}>
       <nav
         style={{
           borderBottom: "1px solid var(--border-light)",
@@ -81,6 +81,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         {children}
       </main>
-    </ConvexAuthNextjsProvider>
+    </ConvexAuthProvider>
   );
 }
