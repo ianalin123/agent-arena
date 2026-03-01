@@ -14,8 +14,8 @@ class EventBridge:
     """Thin client for pushing agent events into Convex."""
 
     def __init__(self, convex_url: str, convex_deploy_key: str):
-        self.convex_url = convex_url
-        self.deploy_key = convex_deploy_key
+        self.convex_url = convex_url.strip()
+        self.deploy_key = convex_deploy_key.strip()
         self.client = httpx.AsyncClient()
 
     async def push_event(

@@ -44,10 +44,19 @@ ENV_KEYS_TO_FORWARD = [
 ]
 
 
+def _sanitize_env():
+    """Strip stray whitespace/newlines from env vars loaded by dotenv."""
+    for key in [*ENV_KEYS_TO_FORWARD, "DAYTONA_API_KEY", "DAYTONA_API_URL"]:
+        val = os.environ.get(key, "")
+        if val != val.strip():
+            os.environ[key] = val.strip()
+
+
 async def launch(args: argparse.Namespace) -> None:
     agent_env = os.path.join(os.path.dirname(__file__), "..", "agent", ".env")
     if os.path.exists(agent_env):
         load_dotenv(agent_env)
+    _sanitize_env()
 
     convex_url = os.environ.get("CONVEX_URL", "")
     convex_key = os.environ.get("CONVEX_DEPLOY_KEY", "")

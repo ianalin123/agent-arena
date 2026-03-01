@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ModelRouter:
     MODEL_IDS: dict[str, str] = {
-        "claude-sonnet": "claude-sonnet-4-5-20250929",
+        "claude-sonnet": "claude-sonnet-4-5",
         "claude-opus": "claude-opus-4-6",
         "gpt-4o": "gpt-4o",
         "gemini-2-flash": "gemini-2.0-flash",

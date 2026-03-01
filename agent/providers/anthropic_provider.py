@@ -11,7 +11,7 @@ from tools.schemas import to_anthropic_tools
 
 
 class AnthropicProvider(BaseProvider):
-    def __init__(self, model_id: str = "claude-sonnet-4-5-20250514"):
+    def __init__(self, model_id: str = "claude-sonnet-4-5"):
         self.client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.model_id = model_id
 

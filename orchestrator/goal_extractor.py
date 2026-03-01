@@ -15,6 +15,12 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+VALID_GOAL_TYPES = {
+    "follower_count", "revenue", "views", "emails_booked",
+    "engagement", "sign_ups", "general",
+}
+
+
 class ExtractedGoal(BaseModel):
     """Structured representation of a challenge, extracted from free text."""
 
@@ -50,6 +56,23 @@ class ExtractedGoal(BaseModel):
         description="Primary platform (twitter, youtube, linkedin, etc.)",
     )
 
+    def normalized(self) -> "ExtractedGoal":
+        """Normalize LLM output — coerce unknown goal_types to 'revenue' or
+        'general', and ensure target_value is non-zero."""
+        goal_type = self.goal_type
+        target = self.target_value
+
+        if goal_type not in VALID_GOAL_TYPES:
+            if goal_type in ("financial", "earnings", "income", "money", "balance", "wallet"):
+                goal_type = "revenue"
+            else:
+                goal_type = "general"
+
+        if target <= 0:
+            target = 100
+
+        return self.model_copy(update={"goal_type": goal_type, "target_value": target})
+
 
 _EXTRACTION_PROMPT = """\
 You are a goal extraction system for an AI agent arena. Given a challenge description,
@@ -75,8 +98,9 @@ Challenge description:
 
 _SYSTEM_INSTRUCTION = (
     "Respond ONLY with valid JSON. No markdown, no explanation, no code fences. "
-    "The JSON must have these keys: goal_type (string), target_value (number), "
-    "time_limit_seconds (integer), verification_hint (string), "
+    "The JSON must have these keys: goal_type (one of: follower_count, revenue, "
+    "views, emails_booked, engagement, sign_ups, general), target_value (number, "
+    "must be > 0), time_limit_seconds (integer), verification_hint (string), "
     "constraints (array of strings), account_handle (string), platform (string)."
 )
 
@@ -85,10 +109,11 @@ async def extract_goal(challenge_text: str) -> ExtractedGoal:
     """Parse a free-text challenge into a structured ExtractedGoal.
 
     Uses the Anthropic messages API as primary path. Falls back to heuristic
-    regex parsing when the API call fails.
+    regex parsing when the API call fails. Always normalizes the result.
     """
     try:
-        return await _extract_with_anthropic(challenge_text)
+        result = await _extract_with_anthropic(challenge_text)
+        return result.normalized()
     except Exception as e:
         logger.warning("Anthropic extraction failed (%s), using heuristic fallback", e)
 
@@ -103,7 +128,7 @@ async def _extract_with_anthropic(challenge_text: str) -> ExtractedGoal:
     prompt = _EXTRACTION_PROMPT.format(challenge_text=challenge_text)
 
     response = await client.messages.create(
-        model="claude-sonnet-4-5-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
         system=_SYSTEM_INSTRUCTION,

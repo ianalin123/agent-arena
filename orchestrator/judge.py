@@ -139,7 +139,7 @@ async def _judge_with_anthropic(prompt: str) -> JudgeVerdict:
 
     client = anthropic.AsyncAnthropic()
     response = await client.messages.create(
-        model="claude-sonnet-4-5-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
         system=_JUDGE_SYSTEM,

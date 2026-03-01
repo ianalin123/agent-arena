@@ -31,6 +31,11 @@ agent_env = os.path.join(os.path.dirname(__file__), "..", "agent", ".env")
 if os.path.exists(agent_env):
     load_dotenv(agent_env)
 
+for _key in [*ENV_KEYS_TO_FORWARD, "DAYTONA_API_KEY", "DAYTONA_API_URL"]:
+    _val = os.environ.get(_key, "")
+    if _val != _val.strip():
+        os.environ[_key] = _val.strip()
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,

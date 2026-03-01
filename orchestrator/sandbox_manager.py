@@ -51,8 +51,8 @@ class SandboxManager:
     """Manages Daytona sandboxes for running AI agents in isolation."""
 
     def __init__(self, api_key: str | None = None, api_url: str | None = None):
-        self._api_key = api_key or os.environ.get("DAYTONA_API_KEY", "")
-        self._api_url = api_url or os.environ.get("DAYTONA_API_URL", "https://app.daytona.io/api")
+        self._api_key = (api_key or os.environ.get("DAYTONA_API_KEY", "")).strip()
+        self._api_url = (api_url or os.environ.get("DAYTONA_API_URL", "https://app.daytona.io/api")).strip()
         self._daytona: Any = None
 
     async def _get_client(self) -> "AsyncDaytona":
