@@ -9,6 +9,7 @@ interface SandboxCardProps {
   sandbox: {
     _id: string;
     goalDescription: string;
+    goalType?: string;
     model: string;
     currentProgress: number;
     targetValue: number;
@@ -18,27 +19,12 @@ interface SandboxCardProps {
   };
 }
 
-const MODEL_COLORS: Record<string, string> = {
-  "claude-sonnet": "bg-orange-500",
-  "claude-opus": "bg-orange-600",
-  "gpt-4o": "bg-emerald-500",
-  "gemini-2-flash": "bg-blue-500",
-};
-
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-accent-green/15 text-accent-green",
-  pending: "bg-accent-yellow/15 text-accent-yellow",
-  completed: "bg-accent-blue/15 text-accent-blue",
-  failed: "bg-accent-red/15 text-accent-red",
-  paused: "bg-text-muted/15 text-text-muted",
-};
-
-const STATUS_TOOLTIPS: Record<string, string> = {
-  active: "Agent is running and executing tasks",
-  pending: "Sandbox is queued and waiting to start",
-  completed: "Agent finished — goal was achieved",
-  failed: "Agent stopped — goal was not achieved",
-  paused: "Agent execution is paused",
+const STATUS_PILL: Record<string, string> = {
+  active: "pill pill-live",
+  pending: "pill pill-amber",
+  completed: "pill pill-green",
+  failed: "pill pill-red",
+  paused: "pill pill-neutral",
 };
 
 export function SandboxCard({ sandbox }: SandboxCardProps) {
@@ -46,9 +32,6 @@ export function SandboxCard({ sandbox }: SandboxCardProps) {
     100,
     (sandbox.currentProgress / sandbox.targetValue) * 100
   );
-
-  const modelColor = MODEL_COLORS[sandbox.model] ?? "bg-gray-500";
-  const statusStyle = STATUS_STYLES[sandbox.status] ?? STATUS_STYLES.pending;
 
   const stopSandbox = useMutation(api.sandboxes.stop);
   const pauseSandbox = useMutation(api.sandboxes.pause);
@@ -58,51 +41,54 @@ export function SandboxCard({ sandbox }: SandboxCardProps) {
   const canPause = sandbox.status === "active";
   const canResume = sandbox.status === "paused";
 
+  const href = sandbox.goalType
+    ? `/challenge/${sandbox.goalType}`
+    : `/sandbox/${sandbox._id}`;
+
   return (
-    <Link href={`/sandbox/${sandbox._id}`}>
-      <div className="group rounded-xl border border-border bg-bg-card p-5 hover:bg-bg-card-hover hover:border-border-bright transition-all cursor-pointer">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${modelColor}`} />
-            <span className="text-xs text-text-muted font-medium uppercase">
-              {sandbox.model}
-            </span>
-          </div>
-          <div className="relative group/tooltip">
-            <span
-              className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle}`}
-            >
-              {sandbox.status}
-            </span>
-            <div className="absolute right-0 top-full mt-1.5 px-2.5 py-1.5 rounded-lg bg-bg-tertiary border border-border text-xs text-text-secondary whitespace-nowrap opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-10">
-              {STATUS_TOOLTIPS[sandbox.status] ?? sandbox.status}
-            </div>
-          </div>
+    <Link href={href} style={{ textDecoration: "none" }}>
+      <div
+        className="card-white"
+        style={{
+          padding: 20,
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = "var(--shadow-md)";
+          e.currentTarget.style.transform = "translateY(-1px)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+          <span className="label-caps">{sandbox.model}</span>
+          <span className={STATUS_PILL[sandbox.status] ?? "pill pill-neutral"}>
+            {sandbox.status === "active" ? "LIVE" : sandbox.status}
+          </span>
         </div>
 
-        <h3 className="text-sm font-medium mb-4 leading-snug line-clamp-2 group-hover:text-white transition-colors">
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 16, lineHeight: 1.4 }}>
           {sandbox.goalDescription}
         </h3>
 
-        <div className="mb-2">
-          <div className="h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-accent-purple to-accent-blue rounded-full transition-all duration-700"
-              style={{ width: `${progressPct}%` }}
-            />
+        <div style={{ marginBottom: 8 }}>
+          <div className="progress-track">
+            <div className="progress-fill-purple" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-text-muted">
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--ink-faint)" }}>
           <span>
-            {sandbox.currentProgress.toLocaleString()} /{" "}
-            {sandbox.targetValue.toLocaleString()}
+            {sandbox.currentProgress.toLocaleString()} / {sandbox.targetValue.toLocaleString()}
           </span>
           <span>{progressPct.toFixed(0)}%</span>
         </div>
 
         {(canStop || canPause || canResume) && (
-          <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
+          <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-light)" }}>
             {canPause && (
               <button
                 onClick={(e) => {
@@ -110,7 +96,8 @@ export function SandboxCard({ sandbox }: SandboxCardProps) {
                   e.stopPropagation();
                   pauseSandbox({ sandboxId: sandbox._id as Id<"sandboxes"> });
                 }}
-                className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-accent-yellow/10 text-accent-yellow hover:bg-accent-yellow/20 transition-colors"
+                className="btn-outline"
+                style={{ flex: 1, padding: "6px 8px", fontSize: 11 }}
               >
                 Pause
               </button>
@@ -122,7 +109,8 @@ export function SandboxCard({ sandbox }: SandboxCardProps) {
                   e.stopPropagation();
                   resumeSandbox({ sandboxId: sandbox._id as Id<"sandboxes"> });
                 }}
-                className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-accent-green/10 text-accent-green hover:bg-accent-green/20 transition-colors"
+                className="btn-outline"
+                style={{ flex: 1, padding: "6px 8px", fontSize: 11 }}
               >
                 Resume
               </button>
@@ -134,7 +122,8 @@ export function SandboxCard({ sandbox }: SandboxCardProps) {
                   e.stopPropagation();
                   stopSandbox({ sandboxId: sandbox._id as Id<"sandboxes"> });
                 }}
-                className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-accent-red/10 text-accent-red hover:bg-accent-red/20 transition-colors"
+                className="btn-outline"
+                style={{ flex: 1, padding: "6px 8px", fontSize: 11 }}
               >
                 Stop
               </button>

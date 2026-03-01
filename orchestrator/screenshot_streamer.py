@@ -21,7 +21,6 @@ class ScreenshotStreamer:
         self.bridge = event_bridge
         self.interval = interval_seconds
         self._running = False
-        self._task: asyncio.Task[None] | None = None
 
     async def start(self, sandbox_id: str, browser_session: Any) -> None:
         """Begin streaming screenshots for a sandbox. Runs until stop() is called."""

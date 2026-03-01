@@ -10,6 +10,7 @@ import { GoalProgress } from "../../../components/GoalProgress";
 import { PromptInput } from "../../../components/PromptInput";
 import { CreditInjection } from "../../../components/CreditInjection";
 import { LogStream } from "../../../components/LogStream";
+import Link from "next/link";
 import type { Id } from "@/convex/types";
 
 export default function SandboxPage() {
@@ -22,10 +23,20 @@ export default function SandboxPage() {
 
   if (!data || !data.sandbox) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-2 border-accent-purple border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-text-secondary">Loading sandbox...</p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              border: "3px solid var(--purple)",
+              borderTopColor: "transparent",
+              margin: "0 auto 16px",
+            }}
+            className="animate-spin"
+          />
+          <p style={{ color: "var(--ink-muted)", fontSize: 14 }}>Loading sandbox...</p>
         </div>
       </div>
     );
@@ -35,15 +46,22 @@ export default function SandboxPage() {
 
   return (
     <div>
-      <a
+      <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary mb-4 transition-colors"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, color: "var(--purple)", textDecoration: "none", fontWeight: 500, marginBottom: 16 }}
       >
         ← Back to Arena
-      </a>
+      </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 380px",
+          gap: 24,
+          alignItems: "start",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <BrowserStream
             sandboxId={sandboxId}
             liveUrl={(sandbox as any).liveUrl}
@@ -53,12 +71,12 @@ export default function SandboxPage() {
           <LogStream sandboxId={sandboxId} maxHeight="20rem" />
         </div>
 
-        <aside className="space-y-6">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <GoalProgress sandbox={sandbox} />
           <BettingPanel sandboxId={sandboxId} pool={pool} />
           <CreditInjection sandboxId={sandboxId} />
           <PromptInput sandboxId={sandboxId} />
-        </aside>
+        </div>
       </div>
     </div>
   );

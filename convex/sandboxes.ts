@@ -103,6 +103,17 @@ export const getModelStats = query({
   },
 });
 
+export const listActiveByGoalType = query({
+  args: { goalType: v.string() },
+  handler: async (ctx, args) => {
+    const active = await ctx.db
+      .query("sandboxes")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .take(200);
+    return active.filter((s) => s.goalType === args.goalType);
+  },
+});
+
 export const getForLaunch = internalQuery({
   args: { sandboxId: v.id("sandboxes") },
   handler: async (ctx, args) => {

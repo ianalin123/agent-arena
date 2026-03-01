@@ -22,10 +22,28 @@ from pydantic import BaseModel
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from event_bridge import EventBridge
 from goal_extractor import extract_goal
 from judge import JudgeScheduler
 from sandbox_manager import SandboxManager
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(name)s %(levelname)s %(message)s",
+)
+
+ENV_KEYS_TO_FORWARD = [
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+    "GOOGLE_API_KEY",
+    "BROWSER_USE_API_KEY",
+    "AGENTMAIL_API_KEY",
+    "SUPERMEMORY_API_KEY",
+    "LMNR_PROJECT_API_KEY",
+    "LOCUS_API_KEY",
+    "CONVEX_URL",
+    "CONVEX_DEPLOY_KEY",
+]
 
 agent_env = os.path.join(os.path.dirname(__file__), "..", "agent", ".env")
 if os.path.exists(agent_env):
@@ -35,12 +53,6 @@ for _key in [*ENV_KEYS_TO_FORWARD, "DAYTONA_API_KEY", "DAYTONA_API_URL"]:
     _val = os.environ.get(_key, "")
     if _val != _val.strip():
         os.environ[_key] = _val.strip()
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s %(levelname)s %(message)s",
-)
 
 _manager: SandboxManager | None = None
 _judge: JudgeScheduler | None = None
@@ -70,19 +82,6 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(title="Agent Arena Orchestrator", lifespan=lifespan)
-
-ENV_KEYS_TO_FORWARD = [
-    "ANTHROPIC_API_KEY",
-    "OPENAI_API_KEY",
-    "GOOGLE_API_KEY",
-    "BROWSER_USE_API_KEY",
-    "AGENTMAIL_API_KEY",
-    "SUPERMEMORY_API_KEY",
-    "LMNR_PROJECT_API_KEY",
-    "LOCUS_API_KEY",
-    "CONVEX_URL",
-    "CONVEX_DEPLOY_KEY",
-]
 
 
 class LaunchRequest(BaseModel):

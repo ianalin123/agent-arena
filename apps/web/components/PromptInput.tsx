@@ -36,28 +36,31 @@ export function PromptInput({ sandboxId }: PromptInputProps) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-bg-card p-5">
-      <h3 className="text-sm font-medium text-text-secondary uppercase tracking-wider mb-3">
-        Send a Suggestion
-      </h3>
-      <p className="text-xs text-text-muted mb-3">
+    <div className="card-white" style={{ padding: 20 }}>
+      <h3 className="label-caps" style={{ marginBottom: 8 }}>Send a Suggestion</h3>
+      <p style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 12 }}>
         The agent will consider your strategy in its next decision.
       </p>
 
-      <div className="flex gap-2">
+      <div style={{ display: "flex", gap: 8 }}>
         <input
           type="text"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Try posting memes..."
-          className="flex-1 bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-purple transition-colors"
+          className="input-warm"
+          style={{ flex: 1 }}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           disabled={sending}
         />
         <button
           onClick={handleSubmit}
           disabled={sending || !prompt.trim()}
-          className="px-4 py-2 rounded-lg bg-bg-tertiary border border-border text-sm font-medium hover:bg-bg-card-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="btn-ghost"
+          style={{
+            opacity: sending || !prompt.trim() ? 0.5 : 1,
+            cursor: sending || !prompt.trim() ? "not-allowed" : "pointer",
+          }}
         >
           {sent ? "Sent!" : sending ? "..." : "Send"}
         </button>

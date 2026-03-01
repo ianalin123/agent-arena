@@ -1,8 +1,24 @@
 "use client";
 
 import "./globals.css";
+import { DM_Sans, DM_Mono } from "next/font/google";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ReactNode, useState } from "react";
+import Link from "next/link";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+});
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  variable: "--font-dm-mono",
+  weight: ["300", "400", "500"],
+  style: ["normal", "italic"],
+});
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -12,40 +28,85 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
-        <title>Agent Arena</title>
+        <title>Agent Arena — Predict which AI hits the goal first</title>
         <meta
           name="description"
-          content="Watch, bet on, and interact with AI agents pursuing verifiable goals"
+          content="Live prediction markets for autonomous AI agents competing in real challenges."
         />
       </head>
-      <body className="min-h-screen bg-bg-primary text-text-primary antialiased">
+      <body className={`${dmSans.variable} ${dmMono.variable}`}>
         {client ? (
           <ConvexProvider client={client}>
-            <nav className="border-b border-border px-6 py-4 flex items-center justify-between bg-bg-secondary/80 backdrop-blur-sm sticky top-0 z-50">
-              <a href="/" className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-accent-purple flex items-center justify-center text-white font-bold text-sm">
+            <nav
+              style={{
+                borderBottom: "1px solid var(--border-light)",
+                padding: "0 24px",
+                height: 56,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "var(--bg-cream)",
+                position: "sticky",
+                top: 0,
+                zIndex: 50,
+              }}
+            >
+              <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    background: "var(--purple)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontWeight: 800,
+                    fontSize: 13,
+                  }}
+                >
                   A
                 </div>
-                <span className="text-lg font-bold tracking-tight">
+                <span
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: "var(--ink)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   Agent Arena
                 </span>
-              </a>
-              <div className="flex items-center gap-4 text-sm text-text-secondary">
-                <span className="px-3 py-1.5 rounded-full bg-bg-tertiary border border-border">
+              </Link>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                <Link href="/" className="nav-link">Challenges</Link>
+                <span
+                  className="pill pill-neutral"
+                  style={{ fontSize: 12 }}
+                >
                   Play Money: $1,000
                 </span>
               </div>
             </nav>
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+            <main
+              style={{
+                maxWidth: 1200,
+                margin: "0 auto",
+                padding: "24px 16px",
+              }}
+            >
               {children}
             </main>
           </ConvexProvider>
         ) : (
-          <p className="p-8 text-center text-text-secondary">
-            Missing NEXT_PUBLIC_CONVEX_URL
-          </p>
+          <div style={{ padding: 48, textAlign: "center", color: "var(--ink-muted)" }}>
+            Missing NEXT_PUBLIC_CONVEX_URL — set it in .env.local to connect to Convex.
+          </div>
         )}
       </body>
     </html>

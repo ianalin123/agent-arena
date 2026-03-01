@@ -34,21 +34,26 @@ export function CreditInjection({ sandboxId }: CreditInjectionProps) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-bg-card p-5">
-      <h3 className="text-sm font-medium text-text-secondary uppercase tracking-wider mb-3">
-        Fund This Agent
-      </h3>
-      <p className="text-xs text-text-muted mb-3">
+    <div className="card-white" style={{ padding: 20 }}>
+      <h3 className="label-caps" style={{ marginBottom: 8 }}>Fund This Agent</h3>
+      <p style={{ fontSize: 12, color: "var(--ink-faint)", marginBottom: 12 }}>
         Add compute credits to keep the agent running longer.
       </p>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
         {AMOUNTS.map((amount) => (
           <button
             key={amount}
             onClick={() => handleInject(amount)}
             disabled={injecting}
-            className="py-2 rounded-lg bg-bg-tertiary border border-border text-sm font-medium hover:bg-bg-card-hover hover:border-border-bright disabled:opacity-50 transition-all"
+            className="btn-outline"
+            style={{
+              padding: "8px 0",
+              fontSize: 13,
+              borderRadius: 10,
+              opacity: injecting ? 0.5 : 1,
+              cursor: injecting ? "not-allowed" : "pointer",
+            }}
           >
             ${amount}
           </button>
@@ -56,7 +61,7 @@ export function CreditInjection({ sandboxId }: CreditInjectionProps) {
       </div>
 
       {success && (
-        <p className="text-xs text-accent-green text-center mt-2">
+        <p style={{ fontSize: 12, color: "var(--green)", textAlign: "center", marginTop: 8 }}>
           Credits added!
         </p>
       )}

@@ -51,62 +51,76 @@ export function BettingPanel({ sandboxId, pool }: BettingPanelProps) {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-bg-card p-5">
-      <h3 className="text-sm font-medium text-text-secondary uppercase tracking-wider mb-3">
-        Betting
-      </h3>
+    <div className="card-white p-5">
+      <h3 className="label-caps mb-3">Betting</h3>
       <p className="text-base font-medium mb-4">Will it hit the goal?</p>
 
       <div className="space-y-2 mb-4">
         <button
           onClick={() => setPosition("yes")}
-          className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+          className="w-full flex items-center justify-between p-3 rounded-lg border transition-all"
+          style={
             position === "yes"
-              ? "border-accent-green bg-accent-green/10"
-              : "border-border hover:border-border-bright"
-          }`}
+              ? {
+                  background: "var(--green)",
+                  border: "1.5px solid var(--green)",
+                  color: "white",
+                }
+              : {
+                  background: "rgba(22,163,74,0.08)",
+                  color: "var(--green)",
+                  border: "1.5px solid rgba(22,163,74,0.2)",
+                }
+          }
         >
           <div className="flex items-center gap-2">
             <div
-              className={`w-3 h-3 rounded-full border-2 ${
+              className="w-3 h-3 rounded-full border-2 shrink-0"
+              style={
                 position === "yes"
-                  ? "border-accent-green bg-accent-green"
-                  : "border-text-muted"
-              }`}
+                  ? { borderColor: "white", background: "white" }
+                  : { borderColor: "var(--green)", background: "var(--green)" }
+              }
             />
-            <span className="font-medium text-accent-green">YES</span>
+            <span className="font-medium">YES</span>
+            <span className="text-xl font-mono font-semibold">{yesPct}%</span>
           </div>
-          <div className="text-right">
-            <span className="text-sm font-mono">{yesPct}%</span>
-            <span className="text-xs text-text-muted ml-2">
-              ${yesTotal.toLocaleString()} · {yesOdds}x
-            </span>
+          <div className="text-right text-sm" style={{ color: "var(--ink-muted)" }}>
+            ${yesTotal.toLocaleString()} · {yesOdds}x
           </div>
         </button>
 
         <button
           onClick={() => setPosition("no")}
-          className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+          className="w-full flex items-center justify-between p-3 rounded-lg border transition-all"
+          style={
             position === "no"
-              ? "border-accent-red bg-accent-red/10"
-              : "border-border hover:border-border-bright"
-          }`}
+              ? {
+                  background: "var(--red)",
+                  border: "1.5px solid var(--red)",
+                  color: "white",
+                }
+              : {
+                  background: "rgba(220,38,38,0.08)",
+                  color: "var(--red)",
+                  border: "1.5px solid rgba(220,38,38,0.2)",
+                }
+          }
         >
           <div className="flex items-center gap-2">
             <div
-              className={`w-3 h-3 rounded-full border-2 ${
+              className="w-3 h-3 rounded-full border-2 shrink-0"
+              style={
                 position === "no"
-                  ? "border-accent-red bg-accent-red"
-                  : "border-text-muted"
-              }`}
+                  ? { borderColor: "white", background: "white" }
+                  : { borderColor: "var(--red)", background: "var(--red)" }
+              }
             />
-            <span className="font-medium text-accent-red">NO</span>
+            <span className="font-medium">NO</span>
+            <span className="text-xl font-mono font-semibold">{noPct}%</span>
           </div>
-          <div className="text-right">
-            <span className="text-sm font-mono">{noPct}%</span>
-            <span className="text-xs text-text-muted ml-2">
-              ${noTotal.toLocaleString()} · {noOdds}x
-            </span>
+          <div className="text-right text-sm" style={{ color: "var(--ink-muted)" }}>
+            ${noTotal.toLocaleString()} · {noOdds}x
           </div>
         </button>
       </div>
@@ -114,7 +128,10 @@ export function BettingPanel({ sandboxId, pool }: BettingPanelProps) {
       {bettingOpen ? (
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">
+            <span
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+              style={{ color: "var(--ink-muted)" }}
+            >
               $
             </span>
             <input
@@ -124,26 +141,31 @@ export function BettingPanel({ sandboxId, pool }: BettingPanelProps) {
               value={betAmount}
               onChange={(e) => setBetAmount(e.target.value)}
               placeholder="Amount"
-              className="w-full bg-bg-tertiary border border-border rounded-lg pl-7 pr-3 py-2 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-purple transition-colors"
+              className="input-warm w-full pl-7 pr-3 py-2"
               onKeyDown={(e) => e.key === "Enter" && handlePlaceBet()}
             />
           </div>
           <button
             onClick={handlePlaceBet}
             disabled={placing || !betAmount}
-            className="px-4 py-2 rounded-lg bg-accent-purple text-white text-sm font-medium hover:bg-accent-purple/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="btn-purple disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
           >
             {placing ? "..." : "Bet"}
           </button>
         </div>
       ) : (
-        <div className="text-center py-2 px-3 rounded-lg bg-bg-tertiary">
-          <p className="text-sm text-text-muted">Betting is closed</p>
+        <div className="card-cream text-center py-2 px-3">
+          <p className="text-sm" style={{ color: "var(--ink-muted)" }}>
+            Betting is closed
+          </p>
         </div>
       )}
 
       {totalPool > 0 && (
-        <p className="text-xs text-text-muted text-center mt-3">
+        <p
+          className="text-xs text-center mt-3"
+          style={{ color: "var(--ink-muted)" }}
+        >
           Total pool: ${totalPool.toLocaleString()}
         </p>
       )}

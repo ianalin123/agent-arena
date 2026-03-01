@@ -2,58 +2,143 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/api";
-import { SandboxCard } from "../components/SandboxCard";
-import { ModelComparison } from "../components/ModelComparison";
-import { LogStream } from "../components/LogStream";
+import { ChallengeCard } from "../components/ChallengeCard";
+
+const UPCOMING_CHALLENGES = [
+  { id: "uc-1", title: "Get 1M YouTube Views", goal: "1,000,000 views in 48h", startsIn: "2h 15m", category: "Social" },
+  { id: "uc-2", title: "Cancel a Gym Membership", goal: "Cancel Planet Fitness in <10 min", startsIn: "4h 00m", category: "Corporate" },
+  { id: "uc-3", title: "Flip $0 to $1,000", goal: "$1,000 from nothing in 1 hour", startsIn: "6h 30m", category: "Revenue" },
+  { id: "uc-4", title: "Get a Human on the Phone", goal: "Reach IRS agent in <30 min", startsIn: "8h 45m", category: "Corporate" },
+  { id: "uc-5", title: "Go Viral on Reddit", goal: "Front page of r/all in 2 hours", startsIn: "12h 00m", category: "Social" },
+];
+
+function groupByGoalType(sandboxes: any[]) {
+  const groups = new Map<string, any>();
+  for (const s of sandboxes) {
+    const key = s.goalType || "other";
+    const existing = groups.get(key);
+    if (!existing || s.createdAt > existing.createdAt) {
+      groups.set(key, s);
+    }
+  }
+  return Array.from(groups.values());
+}
 
 export default function Dashboard() {
   const sandboxes = useQuery(api.sandboxes.list) ?? [];
+  const activeSandboxes = sandboxes.filter((s: any) => s.status === "active");
+  const challenges = groupByGoalType(activeSandboxes.length > 0 ? activeSandboxes : sandboxes);
 
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
-          Agent Arena
+      {/* Hero */}
+      <div style={{ textAlign: "center", marginBottom: 48, paddingTop: 24 }}>
+        <h1
+          style={{
+            fontSize: 44,
+            fontWeight: 800,
+            letterSpacing: "-0.04em",
+            lineHeight: 1.1,
+            color: "var(--ink)",
+            marginBottom: 12,
+          }}
+        >
+          Predict which AI
+          <br />
+          <span style={{ color: "var(--purple)" }}>hits the goal first</span>
         </h1>
-        <p className="text-text-secondary text-lg">
-          Watch AI agents compete in real-time. Place your bets.
+        <p style={{ fontSize: 17, color: "var(--ink-muted)", maxWidth: 520, margin: "0 auto", lineHeight: 1.6 }}>
+          Watch autonomous AI agents compete in real challenges.
+          Bet on every milestone in real time.
         </p>
-      </header>
+      </div>
 
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Active Sandboxes</h2>
-          <span className="text-sm text-text-secondary">
-            {sandboxes.length} running
-          </span>
+      {/* Live Challenges */}
+      <section style={{ marginBottom: 48 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)" }}>Live Challenges</h2>
+            {activeSandboxes.length > 0 && (
+              <span className="pill pill-live">{activeSandboxes.length} live</span>
+            )}
+          </div>
         </div>
 
-        {sandboxes.length === 0 ? (
-          <div className="rounded-xl border border-border bg-bg-card p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-bg-tertiary mx-auto mb-4 flex items-center justify-center">
-              <span className="text-2xl">🤖</span>
+        {challenges.length === 0 ? (
+          <div
+            className="card-white"
+            style={{ padding: 48, textAlign: "center" }}
+          >
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "var(--bg-cream-dark)",
+                margin: "0 auto 16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 28,
+              }}
+            >
+              🤖
             </div>
-            <p className="text-text-secondary text-lg mb-2">
-              No active sandboxes
+            <p style={{ fontSize: 17, color: "var(--ink-light)", marginBottom: 4 }}>
+              No active challenges
             </p>
-            <p className="text-text-muted text-sm">
-              Create one to get started, or wait for agents to spin up.
+            <p style={{ fontSize: 14, color: "var(--ink-faint)" }}>
+              Create a sandbox to get started, or wait for agents to spin up.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sandboxes.map((sandbox: any) => (
-              <SandboxCard key={sandbox._id} sandbox={sandbox} />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+              gap: 20,
+            }}
+          >
+            {challenges.map((sandbox: any) => (
+              <ChallengeCard key={sandbox._id} sandbox={sandbox} />
             ))}
           </div>
         )}
       </section>
 
-      {sandboxes.length > 0 && <ModelComparison sandboxes={sandboxes} />}
-
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Live Event Stream</h2>
-        <LogStream maxHeight="28rem" />
+      {/* Upcoming */}
+      <section style={{ marginBottom: 48 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 20 }}>
+          Up Next
+        </h2>
+        <div
+          className="card-white"
+          style={{ overflow: "hidden" }}
+        >
+          {UPCOMING_CHALLENGES.map((c, i) => (
+            <div
+              key={c.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 20px",
+                borderBottom: i < UPCOMING_CHALLENGES.length - 1 ? "1px solid var(--border-light)" : "none",
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{c.title}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-faint)", marginLeft: 8 }}>{c.goal}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span className="pill pill-neutral">{c.category}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-muted)", fontFamily: "var(--font-dm-mono, monospace)", minWidth: 60, textAlign: "right" }}>
+                  {c.startsIn}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

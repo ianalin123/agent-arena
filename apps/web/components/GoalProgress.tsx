@@ -10,10 +10,10 @@ interface GoalProgressProps {
 }
 
 const MODEL_LABELS: Record<string, { name: string; color: string }> = {
-  "claude-sonnet": { name: "Claude Sonnet", color: "bg-orange-500" },
-  "claude-opus": { name: "Claude Opus", color: "bg-orange-600" },
-  "gpt-4o": { name: "GPT-4o", color: "bg-emerald-500" },
-  "gemini-2-flash": { name: "Gemini Flash", color: "bg-blue-500" },
+  "claude-sonnet": { name: "Claude Sonnet", color: "var(--amber)" },
+  "claude-opus": { name: "Claude Opus", color: "#C2410C" },
+  "gpt-4o": { name: "GPT-4o", color: "var(--green)" },
+  "gemini-2-flash": { name: "Gemini Flash", color: "var(--blue)" },
 };
 
 function formatTime(seconds: number): string {
@@ -22,6 +22,14 @@ function formatTime(seconds: number): string {
   const s = Math.floor(seconds % 60);
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
+
+const STATUS_PILL_CLASSES: Record<string, string> = {
+  active: "pill pill-live",
+  pending: "pill pill-amber",
+  completed: "pill pill-green",
+  failed: "pill pill-red",
+  paused: "pill pill-neutral",
+};
 
 export function GoalProgress({ sandbox }: GoalProgressProps) {
   const [remaining, setRemaining] = useState("");
@@ -49,15 +57,7 @@ export function GoalProgress({ sandbox }: GoalProgressProps) {
   );
   const modelInfo = MODEL_LABELS[sandbox.model] ?? {
     name: sandbox.model,
-    color: "bg-gray-500",
-  };
-
-  const statusColors: Record<string, string> = {
-    active: "bg-accent-green/15 text-accent-green",
-    pending: "bg-accent-yellow/15 text-accent-yellow",
-    completed: "bg-accent-blue/15 text-accent-blue",
-    failed: "bg-accent-red/15 text-accent-red",
-    paused: "bg-text-muted/15 text-text-muted",
+    color: "var(--ink-muted)",
   };
 
   const canStop = sandbox.status === "active" || sandbox.status === "paused" || sandbox.status === "pending";
@@ -69,75 +69,87 @@ export function GoalProgress({ sandbox }: GoalProgressProps) {
   const handleResume = () => resumeSandbox({ sandboxId: sandbox._id as Id<"sandboxes"> });
 
   return (
-    <div className="rounded-xl border border-border bg-bg-card p-5">
-      <div className="flex items-start justify-between mb-3">
-        <h3 className="text-sm font-medium text-text-secondary uppercase tracking-wider">
-          Goal
-        </h3>
-        <span
-          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-            statusColors[sandbox.status] ?? statusColors.pending
-          }`}
-        >
+    <div className="card-white" style={{ padding: "20px" }}>
+      <style>{`
+        .goal-progress-btn-pause:hover { border-color: var(--amber); color: var(--amber); }
+        .goal-progress-btn-resume:hover { border-color: var(--green); color: var(--green); }
+        .goal-progress-btn-stop:hover { border-color: var(--red); color: var(--red); }
+      `}</style>
+
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
+        <h3 className="label-caps">Goal</h3>
+        <span className={STATUS_PILL_CLASSES[sandbox.status] ?? STATUS_PILL_CLASSES.pending}>
           {sandbox.status}
         </span>
       </div>
 
-      <p className="text-base font-medium mb-4 leading-snug">
+      <p style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "16px", lineHeight: 1.4 }}>
         {sandbox.goalDescription}
       </p>
 
-      <div className="mb-4">
-        <div className="flex justify-between text-sm mb-1.5">
-          <span className="text-text-secondary">Progress</span>
-          <span className="font-mono font-medium">
-            {sandbox.currentProgress.toLocaleString()} /{" "}
-            {sandbox.targetValue.toLocaleString()}
+      <div style={{ marginBottom: "16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "13px" }}>
+          <span style={{ color: "var(--ink-muted)" }}>Progress</span>
+          <span style={{ fontFamily: "var(--font-dm-mono, 'DM Mono'), monospace", fontWeight: 500, color: "var(--ink)" }}>
+            {sandbox.currentProgress.toLocaleString()} / {sandbox.targetValue.toLocaleString()}
           </span>
         </div>
-        <div className="h-2.5 bg-bg-tertiary rounded-full overflow-hidden">
+        <div className="progress-track">
           <div
-            className="h-full bg-gradient-to-r from-accent-purple to-accent-blue rounded-full transition-all duration-700 ease-out"
+            className="progress-fill-purple"
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <p className="text-xs text-text-muted mt-1 text-right">
+        <p style={{ fontSize: "12px", color: "var(--ink-faint)", marginTop: "4px", textAlign: "right" }}>
           {progressPct.toFixed(1)}%
         </p>
       </div>
 
-      <div className="space-y-2.5 text-sm">
-        <div className="flex justify-between">
-          <span className="text-text-secondary">Time Left</span>
-          <span className="font-mono">{remaining || "--:--:--"}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+          <span style={{ color: "var(--ink-muted)" }}>Time Left</span>
+          <span style={{ fontFamily: "var(--font-dm-mono, 'DM Mono'), monospace", fontWeight: 500, color: "var(--ink)" }}>
+            {remaining || "--:--:--"}
+          </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-text-secondary">Credits</span>
-          <span className="font-mono">
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+          <span style={{ color: "var(--ink-muted)" }}>Credits</span>
+          <span style={{ fontFamily: "var(--font-dm-mono, 'DM Mono'), monospace", fontWeight: 500, color: "var(--ink)" }}>
             ${sandbox.creditsRemaining?.toFixed(2) ?? "0.00"}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-text-secondary">Wallet</span>
-          <span className="font-mono">
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+          <span style={{ color: "var(--ink-muted)" }}>Wallet</span>
+          <span style={{ fontFamily: "var(--font-dm-mono, 'DM Mono'), monospace", fontWeight: 500, color: "var(--ink)" }}>
             ${sandbox.walletBalance?.toFixed(2) ?? "0.00"}
           </span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-text-secondary">Model</span>
-          <span className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${modelInfo.color}`} />
-            <span className="text-sm">{modelInfo.name}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
+          <span style={{ color: "var(--ink-muted)" }}>Model</span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor: modelInfo.color,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontFamily: "var(--font-dm-mono, 'DM Mono'), monospace", fontWeight: 500, color: "var(--ink)" }}>
+              {modelInfo.name}
+            </span>
           </span>
         </div>
       </div>
 
       {(canStop || canPause || canResume) && (
-        <div className="mt-5 pt-4 border-t border-border flex gap-2">
+        <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid var(--border-light)", display: "flex", gap: "8px" }}>
           {canPause && (
             <button
               onClick={handlePause}
-              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-accent-yellow/15 text-accent-yellow hover:bg-accent-yellow/25 transition-colors"
+              className="btn-outline goal-progress-btn-pause"
+              style={{ flex: 1, padding: "8px 12px", fontSize: "12px" }}
             >
               Pause
             </button>
@@ -145,7 +157,8 @@ export function GoalProgress({ sandbox }: GoalProgressProps) {
           {canResume && (
             <button
               onClick={handleResume}
-              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-accent-green/15 text-accent-green hover:bg-accent-green/25 transition-colors"
+              className="btn-outline goal-progress-btn-resume"
+              style={{ flex: 1, padding: "8px 12px", fontSize: "12px" }}
             >
               Resume
             </button>
@@ -153,7 +166,8 @@ export function GoalProgress({ sandbox }: GoalProgressProps) {
           {canStop && (
             <button
               onClick={handleStop}
-              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-accent-red/15 text-accent-red hover:bg-accent-red/25 transition-colors"
+              className="btn-outline goal-progress-btn-stop"
+              style={{ flex: 1, padding: "8px 12px", fontSize: "12px" }}
             >
               Stop
             </button>

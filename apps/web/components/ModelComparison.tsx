@@ -4,11 +4,11 @@ interface ModelComparisonProps {
   sandboxes: any[];
 }
 
-const MODEL_META: Record<string, { name: string; color: string; accent: string }> = {
-  "claude-sonnet": { name: "Claude Sonnet", color: "bg-orange-500", accent: "text-orange-400" },
-  "claude-opus": { name: "Claude Opus", color: "bg-orange-600", accent: "text-orange-500" },
-  "gpt-4o": { name: "GPT-4o", color: "bg-emerald-500", accent: "text-emerald-400" },
-  "gemini-2-flash": { name: "Gemini Flash", color: "bg-blue-500", accent: "text-blue-400" },
+const MODEL_META: Record<string, { name: string; color: string }> = {
+  "claude-sonnet": { name: "Claude Sonnet", color: "var(--amber)" },
+  "claude-opus": { name: "Claude Opus", color: "#C2410C" },
+  "gpt-4o": { name: "GPT-4o", color: "var(--green)" },
+  "gemini-2-flash": { name: "Gemini Flash", color: "var(--blue)" },
 };
 
 export function ModelComparison({ sandboxes }: ModelComparisonProps) {
@@ -25,7 +25,6 @@ export function ModelComparison({ sandboxes }: ModelComparisonProps) {
   const models = Object.entries(grouped).map(([model, sbs]) => {
     const total = sbs.length;
     const completed = sbs.filter((s: any) => s.status === "completed").length;
-    const failed = sbs.filter((s: any) => s.status === "failed").length;
     const active = sbs.filter((s: any) => s.status === "active").length;
     const avgProgress =
       sbs.reduce(
@@ -34,18 +33,13 @@ export function ModelComparison({ sandboxes }: ModelComparisonProps) {
         0
       ) / (total || 1);
 
-    const meta = MODEL_META[model] ?? {
-      name: model,
-      color: "bg-gray-500",
-      accent: "text-gray-400",
-    };
+    const meta = MODEL_META[model] ?? { name: model, color: "var(--ink-muted)" };
 
     return {
       model,
       ...meta,
       total,
       completed,
-      failed,
       active,
       avgProgress,
       successRate: total > 0 ? ((completed / total) * 100).toFixed(0) : "--",
@@ -55,47 +49,44 @@ export function ModelComparison({ sandboxes }: ModelComparisonProps) {
   if (models.length <= 1) return null;
 
   return (
-    <section className="mt-8">
-      <h2 className="text-xl font-semibold mb-4">Model Comparison</h2>
+    <section style={{ marginTop: 32 }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 16 }}>
+        Model Comparison
+      </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
         {models.map((m) => (
-          <div
-            key={m.model}
-            className="rounded-xl border border-border bg-bg-card p-4"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`w-3 h-3 rounded-full ${m.color}`} />
-              <span className={`text-sm font-medium ${m.accent}`}>
-                {m.name}
-              </span>
+          <div key={m.model} className="card-white" style={{ padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: m.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{m.name}</span>
             </div>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Sessions</span>
-                <span className="font-mono">{m.total}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--ink-muted)" }}>Sessions</span>
+                <span className="font-mono" style={{ fontWeight: 500 }}>{m.total}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Success Rate</span>
-                <span className="font-mono text-accent-green">
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--ink-muted)" }}>Success Rate</span>
+                <span className="font-mono" style={{ fontWeight: 500, color: "var(--green)" }}>
                   {m.successRate}%
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Avg Progress</span>
-                <span className="font-mono">{m.avgProgress.toFixed(0)}%</span>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--ink-muted)" }}>Avg Progress</span>
+                <span className="font-mono" style={{ fontWeight: 500 }}>{m.avgProgress.toFixed(0)}%</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Active</span>
-                <span className="font-mono">{m.active}</span>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--ink-muted)" }}>Active</span>
+                <span className="font-mono" style={{ fontWeight: 500 }}>{m.active}</span>
               </div>
             </div>
 
-            <div className="mt-3 h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+            <div className="progress-track" style={{ marginTop: 12 }}>
               <div
-                className={`h-full ${m.color} rounded-full transition-all`}
-                style={{ width: `${m.avgProgress}%` }}
+                className="progress-fill-purple"
+                style={{ width: `${m.avgProgress}%`, background: m.color }}
               />
             </div>
           </div>
