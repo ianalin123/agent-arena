@@ -115,6 +115,18 @@ export const listActiveByGoalType = query({
   },
 });
 
+export const listByGoalType = query({
+  args: { goalType: v.string() },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("sandboxes")
+      .withIndex("by_created")
+      .order("desc")
+      .take(200);
+    return all.filter((s) => s.goalType === args.goalType);
+  },
+});
+
 export const getForLaunch = internalQuery({
   args: { sandboxId: v.id("sandboxes") },
   handler: async (ctx, args) => {

@@ -20,6 +20,7 @@ import type * as emails from "../emails.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as lemonsqueezy from "../lemonsqueezy.js";
+import type * as oddsHistory from "../oddsHistory.js";
 import type * as payments from "../payments.js";
 import type * as prompts from "../prompts.js";
 import type * as sandboxes from "../sandboxes.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   http: typeof http;
   lemonsqueezy: typeof lemonsqueezy;
+  oddsHistory: typeof oddsHistory;
   payments: typeof payments;
   prompts: typeof prompts;
   sandboxes: typeof sandboxes;

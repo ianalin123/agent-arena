@@ -15,4 +15,10 @@ crons.interval(
   internal.events.cleanup
 );
 
+crons.interval(
+  "snapshot-odds-history",
+  { seconds: 30 },
+  internal.oddsHistory.snapshotAllActive
+);
+
 export default crons;

@@ -50,6 +50,26 @@ export default defineSchema({
     .index("by_model", ["model"])
     .index("by_goal_status", ["goalDescription", "status"]),
 
+  challenges: defineTable({
+    goalDescription: v.string(),
+    goalType: v.string(),
+    targetValue: v.number(),
+    claudeSandboxId: v.id("sandboxes"),
+    openaiSandboxId: v.id("sandboxes"),
+    status: v.string(),
+    sessionNumber: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_created", ["createdAt"]),
+
+  oddsHistory: defineTable({
+    challengeId: v.id("challenges"),
+    claudePct: v.number(),
+    openaiPct: v.number(),
+    timestamp: v.number(),
+  }).index("by_challenge_time", ["challengeId", "timestamp"]),
+
   bets: defineTable({
     sandboxId: v.id("sandboxes"),
     userId: v.id("users"),
@@ -59,9 +79,11 @@ export default defineSchema({
     settled: v.boolean(),
     payout: v.optional(v.number()),
     placedAt: v.number(),
+    challengeId: v.optional(v.id("challenges")),
   })
     .index("by_sandbox", ["sandboxId"])
-    .index("by_user", ["userId"]),
+    .index("by_user", ["userId"])
+    .index("by_challenge", ["challengeId"]),
 
   bettingPools: defineTable({
     sandboxId: v.id("sandboxes"),
@@ -69,7 +91,10 @@ export default defineSchema({
     noTotal: v.number(),
     bettingOpen: v.boolean(),
     platformTake: v.optional(v.number()),
-  }).index("by_sandbox", ["sandboxId"]),
+    challengeId: v.optional(v.id("challenges")),
+  })
+    .index("by_sandbox", ["sandboxId"])
+    .index("by_challenge", ["challengeId"]),
 
   creditTransactions: defineTable({
     sandboxId: v.id("sandboxes"),
