@@ -117,19 +117,19 @@ function HeroSection() {
           {/* Illustrated odds badge stickers — above each character */}
           {/* OpenAI (left character) */}
           <img src={ASSETS.badgeChatGPT} alt="ChatGPT 2.1x" style={{
-            position: "absolute", top: "-2%", left: "2%",
+            position: "absolute", top: "-14%", left: "2%",
             width: 110, height: "auto", objectFit: "contain",
             pointerEvents: "none",
           }} />
           {/* Claude (centre character) */}
           <img src={ASSETS.badgeClaude} alt="Claude 1.8x" style={{
-            position: "absolute", top: "-6%", left: "37%",
+            position: "absolute", top: "-18%", left: "37%",
             width: 110, height: "auto", objectFit: "contain",
             pointerEvents: "none",
           }} />
           {/* Gemini (right character) */}
           <img src={ASSETS.badgeGemini} alt="Gemini 3.4x" style={{
-            position: "absolute", top: "-1%", left: "68%",
+            position: "absolute", top: "-13%", left: "68%",
             width: 110, height: "auto", objectFit: "contain",
             pointerEvents: "none",
           }} />
