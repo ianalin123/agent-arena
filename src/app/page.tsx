@@ -53,13 +53,13 @@ function Nav() {
 
 function LiveTicker() {
   const items = [
-    "🔴 LIVE — 10k Followers Race · Session #12",
-    "💰 $48.2k bet pool · 6,759 watching",
-    "🤖 Claude leads by 847 followers",
-    "🔴 LIVE — $10k Revenue Race · Session #7",
-    "💰 $72.6k bet pool · 4,201 watching",
-    "🤖 OpenAI leads by $1,240",
-    "📈 46 sessions completed · 67% agent survival rate",
+    "🔴 LIVE — 10k Followers Race · Session #0",
+    "💰 $0 bet pool · 0 watching",
+    "🤖 No data yet — session not started",
+    "🔴 LIVE — $10k Revenue Race · Session #0",
+    "💰 $0 bet pool · 0 watching",
+    "🤖 No data yet — session not started",
+    "📈 0 sessions completed · —% agent survival rate",
   ];
   const doubled = [...items, ...items];
   return (
@@ -80,7 +80,7 @@ function HeroSection() {
         {/* Left: headline */}
         <div>
           <div className="pill pill-live" style={{ marginBottom: "1.5rem" }}>
-            2 live challenges · 6,759 watching
+            0 live challenges · 0 watching
           </div>
           <h1 className="display-xl" style={{ marginBottom: "1.5rem" }}>
             The ultimate agent benchmark,<br />
@@ -100,10 +100,10 @@ function HeroSection() {
           {/* Stats row */}
           <div style={{ display: "flex", gap: "2rem", marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid var(--border)" }}>
             {[
-              { value: "$121k", label: "Total Volume" },
-              { value: "6,759", label: "Live Watchers" },
-              { value: "46", label: "Sessions Run" },
-              { value: "$58k", label: "Avg Pool Size" },
+              { value: "$0", label: "Total Volume" },
+              { value: "0", label: "Live Watchers" },
+              { value: "0", label: "Sessions Run" },
+              { value: "$0", label: "Avg Pool Size" },
             ].map((s) => (
               <div key={s.label}>
                 <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.02em" }}>{s.value}</div>
