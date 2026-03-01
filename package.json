@@ -2,11 +2,31 @@
   "name": "agent-arena",
   "version": "0.1.0",
   "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
+    "@auth/core": "^0.37.4",
+    "@convex-dev/auth": "^0.0.91",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@useautumn/convex": "^0.1.0",
     "autumn-js": "^0.1.24",
     "browser-use-convex-component": "^0.1.1",
     "convex": "^1",
     "next": "^15",
-    "@useautumn/convex": "^0.1.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5"
   }
 }
