@@ -23,6 +23,8 @@ export function BetPanel({
   const MAX_BET = 500;
   const [amount, setAmount] = useState("10");
   const [placed, setPlaced] = useState(false);
+  const amountNum = parseFloat(amount) || 0;
+  const overMax = amountNum > MAX_BET;
 
   const claudeOdds = (100 / claudeWinPct).toFixed(2);
   const openaiOdds = (100 / openaiWinPct).toFixed(2);
@@ -31,9 +33,8 @@ export function BetPanel({
     : "0.00";
 
   function handlePlace() {
-    if (!selected || !amount || !bettingOpen) return;
-    const capped = Math.min(parseFloat(amount), MAX_BET);
-    onPlaceBet?.(selected, capped);
+    if (!selected || !amount || !bettingOpen || overMax) return;
+    onPlaceBet?.(selected, amountNum);
     setPlaced(true);
     setTimeout(() => setPlaced(false), 3000);
   }
@@ -84,21 +85,19 @@ export function BetPanel({
           type="number"
           className="bet-amount-input"
           value={amount}
-          onChange={(e) => {
-            const val = parseFloat(e.target.value);
-            if (!isNaN(val) && val > MAX_BET) setAmount(String(MAX_BET));
-            else setAmount(e.target.value);
-          }}
+          onChange={(e) => setAmount(e.target.value)}
           placeholder="$0.00"
           min="1"
-          max={MAX_BET}
           disabled={!bettingOpen}
+          style={{ borderColor: overMax ? "var(--red)" : undefined }}
         />
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
           {["10", "25", "100", "500"].map((v) => (
             <button key={v} className="quick-amount" onClick={() => setAmount(v)} disabled={!bettingOpen}>${v}</button>
           ))}
-          <span style={{ fontSize: "0.75rem", color: "var(--ink-3)", alignSelf: "center", marginLeft: "0.25rem" }}>Max $500</span>
+          {overMax && (
+            <span style={{ fontSize: "0.75rem", color: "var(--red)", fontWeight: 600, alignSelf: "center", marginLeft: "0.25rem" }}>Max bet is $500</span>
+          )}
         </div>
       </div>
 
@@ -119,9 +118,9 @@ export function BetPanel({
 
       <button
         className="btn-primary"
-        style={{ width: "100%", opacity: (!selected || !amount || !bettingOpen) ? 0.5 : 1 }}
+        style={{ width: "100%", opacity: (!selected || !amount || !bettingOpen || overMax) ? 0.5 : 1 }}
         onClick={handlePlace}
-        disabled={!selected || !amount || !bettingOpen}
+        disabled={!selected || !amount || !bettingOpen || overMax}
       >
         {placed ? "✓ Bet placed!" : `Bet on ${selected === "claude" ? "Claude" : selected === "openai" ? "OpenAI" : "..."}`}
       </button>
