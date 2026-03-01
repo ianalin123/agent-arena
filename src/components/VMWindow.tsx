@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentThinking } from "./AgentThinking";
-import { ActionLog } from "./ActionLog";
+import { ActionLog, type ActionItem } from "./ActionLog";
 
 export interface VMWindowProps {
   agent: "claude" | "openai";
@@ -12,7 +12,7 @@ export interface VMWindowProps {
   computeCost?: number;
   burnRate?: number;
   thinking?: string;
-  actions?: Array<{ time: string; text: string; type: string }>;
+  actions?: ActionItem[];
 }
 
 export function VMWindow({

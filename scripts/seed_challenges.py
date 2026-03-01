@@ -3,7 +3,8 @@
 then launch each sandbox through the orchestrator so agents actually start.
 
 Usage:
-    python scripts/seed_challenges.py                  # create + launch
+    python scripts/seed_challenges.py                  # create + launch (prod)
+    python scripts/seed_challenges.py --dev            # target dev Convex deployment
     python scripts/seed_challenges.py --no-launch      # create only (skip orchestrator)
     python scripts/seed_challenges.py --launch-existing # re-launch pending sandboxes for existing challenges
 """
@@ -18,9 +19,23 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "orchestrator")
 
 from dotenv import load_dotenv
 
-agent_env = os.path.join(os.path.dirname(__file__), "..", "agent", ".env")
-if os.path.exists(agent_env):
-    load_dotenv(agent_env)
+_root = os.path.join(os.path.dirname(__file__), "..")
+USE_DEV = "--dev" in sys.argv
+if USE_DEV:
+    sys.argv.remove("--dev")
+
+if USE_DEV:
+    _env_file = os.path.join(_root, ".env.local")
+    print(f"  env: DEV (loading {_env_file})")
+else:
+    _env_file = os.path.join(_root, "agent", ".env")
+    print(f"  env: PROD (loading {_env_file})")
+
+if os.path.exists(_env_file):
+    load_dotenv(_env_file)
+else:
+    print(f"WARNING: {_env_file} not found")
+    sys.exit(1)
 
 from event_bridge import EventBridge
 
@@ -185,7 +200,8 @@ async def seed():
     convex_key = os.environ.get("CONVEX_DEPLOY_KEY", "")
 
     if not convex_url or not convex_key:
-        print("ERROR: CONVEX_URL and CONVEX_DEPLOY_KEY must be set (loaded from agent/.env)")
+        src = ".env.local" if USE_DEV else "agent/.env"
+        print(f"ERROR: CONVEX_URL and CONVEX_DEPLOY_KEY must be set (loaded from {src})")
         sys.exit(1)
 
     bridge = EventBridge(convex_url, convex_key)

@@ -13,6 +13,8 @@ import { VMWindow } from "@/components/VMWindow";
 import { BetPanel } from "@/components/BetPanel";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
 import { SessionStats } from "@/components/SessionStats";
+import { deriveEventLabel } from "@/lib/event-labels";
+import type { ActionItem } from "@/components/ActionLog";
 
 interface DemoAgentState {
   winPct: number;
@@ -129,23 +131,26 @@ function toDisplayText(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function eventsToActions(events: Array<{ eventType: string; payload: string; timestamp: number }>): Array<{ time: string; text: string; type: string }> {
-  return events.map(e => {
-    let payload: Record<string, unknown> = {};
-    try {
-      payload = typeof e.payload === "string" ? JSON.parse(e.payload) : (e.payload ?? {});
-    } catch { /* malformed JSON — use empty */ }
-    const raw = payload?.message ?? payload?.action ?? payload?.description ?? e.eventType;
-    return {
-      time: new Date(e.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      text: toDisplayText(raw),
-      type: e.eventType.includes("think") ? "analyze" :
-            e.eventType.includes("navigate") ? "navigate" :
-            e.eventType.includes("click") ? "click" :
-            e.eventType.includes("error") ? "error" :
-            e.eventType.includes("success") || e.eventType.includes("complete") ? "success" : "click",
-    };
-  });
+function eventsToActions(events: Array<{ eventType: string; payload: string; timestamp: number }>): ActionItem[] {
+  return events
+    .filter(e => e.eventType !== "status")
+    .map(e => {
+      const raw = typeof e.payload === "string" ? e.payload : JSON.stringify(e.payload ?? {});
+      const info = deriveEventLabel(e.eventType, raw);
+      const type =
+        info.pillClass.includes("red")    ? "error" :
+        info.pillClass.includes("green")  ? "success" :
+        info.pillClass.includes("violet") || info.pillClass.includes("purple") ? "analyze" :
+        info.pillClass.includes("blue")   ? "navigate" :
+        "click";
+      return {
+        time: new Date(e.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        text: info.summary,
+        type,
+        label: info.label,
+        pillClass: info.pillClass,
+      };
+    });
 }
 
 function DemoChallengePage({ id }: { id: string }) {
@@ -260,9 +265,9 @@ function DemoChallengePage({ id }: { id: string }) {
         timeElapsed={timeElapsed}
       />
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 340px", gap: "1.5rem", alignItems: "start" }}>
-          <div>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem", overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) 272px", gap: "1.5rem", alignItems: "start" }}>
+          <div style={{ minWidth: 0 }}>
             <VMWindow
               agent="claude"
               agentStatus={claudeState.status}
@@ -273,7 +278,7 @@ function DemoChallengePage({ id }: { id: string }) {
             />
           </div>
 
-          <div>
+          <div style={{ minWidth: 0 }}>
             <VMWindow
               agent="openai"
               agentStatus={openaiState.status}
@@ -295,7 +300,7 @@ function DemoChallengePage({ id }: { id: string }) {
           </div>
         </div>
 
-        <div style={{ marginTop: "1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr 340px", gap: "1.5rem" }}>
+        <div style={{ marginTop: "1.5rem", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) 272px", gap: "1.5rem" }}>
           <div style={{ gridColumn: "1 / 3" }}>
             <ProbabilityChart chartData={chartData} />
           </div>
@@ -433,9 +438,9 @@ function ConvexChallengePage({ id }: { id: string }) {
         timeElapsed={timeElapsed}
       />
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 340px", gap: "1.5rem", alignItems: "start" }}>
-          <div>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem 1.5rem", overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) 272px", gap: "1.5rem", alignItems: "start" }}>
+          <div style={{ minWidth: 0 }}>
             <VMWindow
               agent="claude"
               liveUrl={claudeSandbox?.liveUrl || null}
@@ -456,7 +461,7 @@ function ConvexChallengePage({ id }: { id: string }) {
             )}
           </div>
 
-          <div>
+          <div style={{ minWidth: 0 }}>
             <VMWindow
               agent="openai"
               liveUrl={openaiSandbox?.liveUrl || null}
@@ -489,7 +494,7 @@ function ConvexChallengePage({ id }: { id: string }) {
           </div>
         </div>
 
-        <div style={{ marginTop: "1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr 340px", gap: "1.5rem" }}>
+        <div style={{ marginTop: "1.5rem", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) 272px", gap: "1.5rem" }}>
           <div style={{ gridColumn: "1 / 3" }}>
             <ProbabilityChart chartData={chartData} />
           </div>
