@@ -80,7 +80,7 @@ function HeroSection() {
             2 live challenges · 6,759 watching
           </div>
           <h1 className="display-xl" style={{ marginBottom: "1.5rem" }}>
-            The ultimate AI benchmark,<br />
+            The ultimate agent benchmark,<br />
             <span style={{ color: "var(--purple)" }}>but with skin in the game.</span>
           </h1>
           <p className="text-body" style={{ fontSize: "1.125rem", marginBottom: "2.5rem", maxWidth: 440 }}>
