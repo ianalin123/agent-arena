@@ -1,5 +1,6 @@
 """Supermemory integration — long-term context and learning for agents."""
 
+import asyncio
 import os
 import logging
 from typing import Any
@@ -20,12 +21,13 @@ class AgentMemory:
             self._available = False
             logger.warning("Supermemory client not available — running without persistent memory")
 
-    def add(self, content: str, sandbox_id: str, goal_type: str, source: str = "agent") -> None:
+    async def add(self, content: str, sandbox_id: str, goal_type: str, source: str = "agent") -> None:
         """Store a learning or observation in long-term memory."""
         if not self._available:
             return
         try:
-            self.client.add(
+            await asyncio.to_thread(
+                self.client.add,
                 content=content,
                 container_tag=sandbox_id,
                 metadata={
@@ -36,12 +38,13 @@ class AgentMemory:
         except Exception as e:
             logger.warning("Failed to store memory: %s", e)
 
-    def search(self, query: str, sandbox_id: str, top_k: int = 5) -> list[dict[str, Any]]:
+    async def search(self, query: str, sandbox_id: str, top_k: int = 5) -> list[dict[str, Any]]:
         """Retrieve relevant past context."""
         if not self._available:
             return []
         try:
-            results = self.client.search.memories(
+            results = await asyncio.to_thread(
+                self.client.search.memories,
                 q=query,
                 container_tag=sandbox_id,
                 search_mode="hybrid",
@@ -58,9 +61,9 @@ class AgentMemory:
             logger.warning("Failed to search memory: %s", e)
             return []
 
-    def add_user_prompt(self, prompt: str, sandbox_id: str) -> None:
+    async def add_user_prompt(self, prompt: str, sandbox_id: str) -> None:
         """Store a user-injected prompt as retrievable memory."""
-        self.add(
+        await self.add(
             content=f"User suggestion: {prompt}",
             sandbox_id=sandbox_id,
             goal_type="user_prompt",

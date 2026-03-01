@@ -13,6 +13,7 @@ Or from the orchestrator directory:
 import logging
 import os
 import sys
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -34,7 +35,21 @@ logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
 )
 
-app = FastAPI(title="Agent Arena Orchestrator")
+_manager: SandboxManager | None = None
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    global _manager
+    _manager = SandboxManager()
+    logger.info("SandboxManager initialized")
+    yield
+    if _manager:
+        await _manager.close()
+        logger.info("SandboxManager closed")
+
+
+app = FastAPI(title="Agent Arena Orchestrator", lifespan=lifespan)
 
 ENV_KEYS_TO_FORWARD = [
     "ANTHROPIC_API_KEY",
@@ -88,14 +103,13 @@ async def launch_sandbox(req: LaunchRequest) -> LaunchResponse:
         **(req.config or {}),
     }
 
-    manager = SandboxManager()
+    if _manager is None:
+        raise HTTPException(status_code=503, detail="Server not ready")
     try:
-        daytona_id = await manager.create_and_start_agent(sandbox_config, env_vars)
+        daytona_id = await _manager.create_and_start_agent(sandbox_config, env_vars)
     except Exception as e:
         logger.exception("Daytona sandbox creation failed")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await manager.close()
 
     logger.info("Sandbox %s launched as Daytona %s", req.sandboxId, daytona_id)
 

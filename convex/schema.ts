@@ -23,7 +23,8 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_created", ["createdAt"])
-    .index("by_model", ["model"]),
+    .index("by_model", ["model"])
+    .index("by_goal_status", ["goalDescription", "status"]),
 
   bets: defineTable({
     sandboxId: v.id("sandboxes"),
@@ -84,6 +85,14 @@ export default defineSchema({
     sandboxId: v.id("sandboxes"),
     eventType: v.string(),
     payload: v.string(),
+    timestamp: v.number(),
+  })
+    .index("by_sandbox_time", ["sandboxId", "timestamp"])
+    .index("by_timestamp", ["timestamp"]),
+
+  screenshots: defineTable({
+    sandboxId: v.id("sandboxes"),
+    storageId: v.id("_storage"),
     timestamp: v.number(),
   }).index("by_sandbox_time", ["sandboxId", "timestamp"]),
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/api";
 import type { Id } from "@/convex/types";
@@ -79,7 +79,7 @@ function formatPayload(raw: string): { summary: string; full: string } {
   }
 }
 
-function LogEntry({ event }: { event: any }) {
+const LogEntry = React.memo(function LogEntry({ event }: { event: any }) {
   const [expanded, setExpanded] = useState(false);
   const badge = EVENT_BADGES[event.eventType] ?? "bg-zinc-500/20 text-zinc-400";
   const color = EVENT_COLORS[event.eventType] ?? "text-zinc-400";
@@ -113,7 +113,7 @@ function LogEntry({ event }: { event: any }) {
       )}
     </div>
   );
-}
+});
 
 export function LogStream({ sandboxId, maxHeight = "24rem" }: LogStreamProps) {
   const scrollRef = useRef<HTMLDivElement>(null);

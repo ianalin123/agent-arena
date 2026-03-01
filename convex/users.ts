@@ -33,6 +33,25 @@ export const getByEmail = query({
   },
 });
 
+export const ensureTestUser = mutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+    if (existing) return existing._id;
+    return await ctx.db.insert("users", {
+      name: args.name,
+      email: args.email,
+      balance: 1000,
+    });
+  },
+});
+
 export const updateBalance = mutation({
   args: {
     userId: v.id("users"),

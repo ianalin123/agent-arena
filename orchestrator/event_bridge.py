@@ -65,6 +65,28 @@ class EventBridge:
         })
         return result if isinstance(result, list) else []
 
+    async def acknowledge_prompt(self, prompt_id: str) -> None:
+        """Mark a prompt as acknowledged so it is not re-fetched."""
+        await self._call_mutation("prompts:acknowledge", {
+            "promptId": prompt_id,
+        })
+
+    async def upload_screenshot(self, sandbox_id: str, image_bytes: bytes) -> None:
+        """Upload a screenshot to Convex file storage and record it."""
+        upload_url = await self._call_mutation("events:generateUploadUrl", {})
+        resp = await self.client.post(
+            upload_url,
+            content=image_bytes,
+            headers={"Content-Type": "image/png"},
+        )
+        resp.raise_for_status()
+        storage_id = resp.json().get("storageId")
+        if storage_id:
+            await self._call_mutation("events:saveScreenshot", {
+                "sandboxId": sandbox_id,
+                "storageId": storage_id,
+            })
+
     async def _call_mutation(self, function_name: str, args: dict[str, Any]) -> Any:
         """Call a Convex mutation via HTTP API."""
         url = f"{self.convex_url.rstrip('/')}/api/mutation"

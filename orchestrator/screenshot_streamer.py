@@ -1,6 +1,7 @@
-"""Stream browser screenshots from Browser Use into Convex for the frontend."""
+"""Stream browser screenshots from Browser Use into Convex file storage."""
 
 import asyncio
+import base64
 import logging
 from typing import Any
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class ScreenshotStreamer:
-    """Periodically captures screenshots and pushes them to Convex."""
+    """Periodically captures screenshots and uploads them to Convex file storage."""
 
     def __init__(
         self,
@@ -28,11 +29,8 @@ class ScreenshotStreamer:
         while self._running:
             try:
                 screenshot_b64 = await browser_session.screenshot()
-                await self.bridge.push_event(
-                    sandbox_id=sandbox_id,
-                    event_type="screenshot",
-                    payload={"image": screenshot_b64},
-                )
+                image_bytes = base64.b64decode(screenshot_b64)
+                await self.bridge.upload_screenshot(sandbox_id, image_bytes)
             except asyncio.CancelledError:
                 logger.info(
                     "Screenshot stream cancelled for sandbox %s", sandbox_id
@@ -40,7 +38,7 @@ class ScreenshotStreamer:
                 break
             except Exception as e:
                 logger.warning(
-                    "Screenshot capture or push failed for sandbox %s: %s",
+                    "Screenshot capture or upload failed for sandbox %s: %s",
                     sandbox_id,
                     e,
                     exc_info=True,

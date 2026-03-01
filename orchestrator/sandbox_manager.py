@@ -4,6 +4,7 @@ Handles the full lifecycle: create sandbox, upload agent code, install
 dependencies, start agent_runner.py, monitor, and destroy.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -20,6 +21,7 @@ except ImportError:
     DaytonaConfig = None
 
 AGENT_DIR = Path(__file__).resolve().parent.parent / "agent"
+ORCHESTRATOR_DIR = Path(__file__).resolve().parent
 
 AGENT_FILES = [
     "agent_runner.py",
@@ -38,6 +40,10 @@ AGENT_FILES = [
     "tools/email.py",
     "tools/payments.py",
     "tools/schemas.py",
+]
+
+ORCHESTRATOR_FILES = [
+    "event_bridge.py",
 ]
 
 
@@ -95,14 +101,16 @@ class SandboxManager:
 
     async def _create_directories(self, sandbox: Any) -> None:
         """Create the directory structure inside the sandbox."""
-        for subdir in ["agent", "agent/providers", "agent/tools"]:
+        for subdir in ["agent", "agent/providers", "agent/tools", "orchestrator"]:
             try:
                 await sandbox.fs.create_folder(f"/home/daytona/{subdir}", "0755")
             except Exception:
                 pass
 
     async def _upload_agent_files(self, sandbox: Any) -> None:
-        """Upload all agent source files into the sandbox."""
+        """Upload all agent and orchestrator source files in parallel."""
+        upload_tasks = []
+
         for rel_path in AGENT_FILES:
             local_path = AGENT_DIR / rel_path
             if not local_path.exists():
@@ -110,8 +118,20 @@ class SandboxManager:
                 continue
             content = local_path.read_bytes()
             remote_path = f"/home/daytona/agent/{rel_path}"
-            await sandbox.fs.upload_file(content, remote_path)
-            logger.debug("Uploaded %s -> %s", rel_path, remote_path)
+            upload_tasks.append(sandbox.fs.upload_file(content, remote_path))
+
+        for rel_path in ORCHESTRATOR_FILES:
+            local_path = ORCHESTRATOR_DIR / rel_path
+            if not local_path.exists():
+                logger.warning("Orchestrator file not found locally: %s", local_path)
+                continue
+            content = local_path.read_bytes()
+            remote_path = f"/home/daytona/orchestrator/{rel_path}"
+            upload_tasks.append(sandbox.fs.upload_file(content, remote_path))
+
+        if upload_tasks:
+            await asyncio.gather(*upload_tasks)
+            logger.debug("Uploaded %d files in parallel", len(upload_tasks))
 
     async def _upload_config(self, sandbox: Any, config: dict[str, Any]) -> None:
         """Write the sandbox config JSON."""

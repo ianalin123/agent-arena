@@ -15,7 +15,7 @@ export const list = query({
       .query("sandboxes")
       .withIndex("by_created")
       .order("desc")
-      .collect();
+      .take(100);
   },
 });
 
@@ -25,7 +25,7 @@ export const listActive = query({
     return await ctx.db
       .query("sandboxes")
       .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .take(200);
   },
 });
 
@@ -36,7 +36,7 @@ export const listByModel = query({
       .query("sandboxes")
       .withIndex("by_model", (q) => q.eq("model", args.model))
       .order("desc")
-      .collect();
+      .take(100);
   },
 });
 
@@ -46,34 +46,40 @@ export const getComparison = query({
     const sandbox = await ctx.db.get(args.sandboxId);
     if (!sandbox) return [];
     const goalDescription = sandbox.goalDescription;
-    const all = await ctx.db
+    const completed = await ctx.db
       .query("sandboxes")
-      .withIndex("by_created")
-      .order("desc")
-      .collect();
-    return all.filter(
-      (s) =>
-        s.goalDescription === goalDescription &&
-        (s.status === "completed" || s.status === "failed")
-    );
+      .withIndex("by_goal_status", (q) =>
+        q.eq("goalDescription", goalDescription).eq("status", "completed")
+      )
+      .take(50);
+    const failed = await ctx.db
+      .query("sandboxes")
+      .withIndex("by_goal_status", (q) =>
+        q.eq("goalDescription", goalDescription).eq("status", "failed")
+      )
+      .take(50);
+    return [...completed, ...failed];
   },
 });
 
 export const getModelStats = query({
   args: {},
   handler: async (ctx) => {
-    const sandboxes = await ctx.db
+    const completedSandboxes = await ctx.db
       .query("sandboxes")
-      .withIndex("by_status")
-      .collect();
-    const completed = sandboxes.filter(
-      (s) => s.status === "completed" || s.status === "failed"
-    );
+      .withIndex("by_status", (q) => q.eq("status", "completed"))
+      .take(500);
+    const failedSandboxes = await ctx.db
+      .query("sandboxes")
+      .withIndex("by_status", (q) => q.eq("status", "failed"))
+      .take(500);
+    const allFinished = [...completedSandboxes, ...failedSandboxes];
+
     const byModel = new Map<
       string,
       { success: number; failed: number; totalWallet: number; count: number }
     >();
-    for (const s of completed) {
+    for (const s of allFinished) {
       const cur = byModel.get(s.model) ?? {
         success: 0,
         failed: 0,
@@ -110,7 +116,7 @@ export const listExpiredActive = internalQuery({
     const active = await ctx.db
       .query("sandboxes")
       .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
+      .take(200);
     return active.filter((s) => s.expiresAt < args.now).map((s) => s._id);
   },
 });

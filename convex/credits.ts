@@ -7,7 +7,7 @@ export const getForSandbox = query({
     return await ctx.db
       .query("creditTransactions")
       .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
-      .collect();
+      .take(100);
   },
 });
 

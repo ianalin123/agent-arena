@@ -73,7 +73,7 @@ async def run_agent(sandbox_config: dict):
     mail = EmailTool(inbox_id=sandbox_config.get("agentmail_inbox_id", ""))
     payments = PaymentsTool()
     memory = AgentMemory(api_key=os.environ.get("SUPERMEMORY_API_KEY", ""))
-    verifier = GoalVerifier(sandbox_config)
+    verifier = GoalVerifier(sandbox_config, payments_tool=payments, email_tool=mail)
 
     sandbox_id = sandbox_config["sandbox_id"]
     goal = sandbox_config["goal"]
@@ -82,19 +82,45 @@ async def run_agent(sandbox_config: dict):
 
     await browser.create_session()
 
+    bridge = _get_bridge()
+
     _live_url_pushed = False
     if browser.live_url:
         await _push_live_url(sandbox_id, browser.live_url, "")
         _live_url_pushed = True
+
+    async def _poll_live_url():
+        """Background task: poll Browser Use for live_url and push to Convex ASAP."""
+        nonlocal _live_url_pushed
+        for _ in range(30):
+            await asyncio.sleep(2)
+            if _live_url_pushed:
+                return
+            try:
+                details = await browser.get_session_details()
+                url = details.get("live_url")
+                if url:
+                    await _push_live_url(sandbox_id, url, "")
+                    _live_url_pushed = True
+                    logger.info("Background poller pushed live_url: %s", url)
+                    return
+            except Exception as e:
+                logger.debug("live_url poll error: %s", e)
+
+    live_url_task = asyncio.create_task(_poll_live_url())
 
     try:
         while credits > 0 and not verifier.goal_achieved and not verifier.time_expired:
             emails_task = mail.check_inbox()
             balance_task = payments.get_balance()
             prompts_task = _fetch_pending_prompts(sandbox_id)
+            memory_task = memory.search(
+                query=f"strategies for {sandbox_config.get('goal_type', 'general')}",
+                sandbox_id=sandbox_id,
+            )
 
-            emails, balance, user_prompts = await asyncio.gather(
-                emails_task, balance_task, prompts_task,
+            emails, balance, user_prompts, past_context = await asyncio.gather(
+                emails_task, balance_task, prompts_task, memory_task,
                 return_exceptions=True,
             )
 
@@ -107,17 +133,21 @@ async def run_agent(sandbox_config: dict):
             if isinstance(user_prompts, BaseException):
                 logger.warning("fetch_prompts failed: %s", user_prompts)
                 user_prompts = []
-
-            past_context = memory.search(
-                query=f"strategies for {sandbox_config.get('goal_type', 'general')}",
-                sandbox_id=sandbox_id,
-            )
+            if isinstance(past_context, BaseException):
+                logger.warning("memory search failed: %s", past_context)
+                past_context = []
 
             for prompt_data in user_prompts:
-                memory.add_user_prompt(
+                await memory.add_user_prompt(
                     prompt=prompt_data.get("promptText", ""),
                     sandbox_id=sandbox_id,
                 )
+                prompt_id = prompt_data.get("_id", "")
+                if prompt_id and bridge:
+                    try:
+                        await bridge.acknowledge_prompt(prompt_id)
+                    except Exception as e:
+                        logger.warning("Failed to acknowledge prompt %s: %s", prompt_id, e)
 
             stuck_hint = _detect_loop(recent_actions)
             screenshot = ""
@@ -145,7 +175,7 @@ async def run_agent(sandbox_config: dict):
                 await _push_live_url(sandbox_id, browser.live_url, "")
                 _live_url_pushed = True
 
-            memory.add(
+            await memory.add(
                 content=f"Action: {decision.action_type} {decision.action}, Result: {result}",
                 sandbox_id=sandbox_id,
                 goal_type=sandbox_config.get("goal_type", "general"),
@@ -171,7 +201,6 @@ async def run_agent(sandbox_config: dict):
                 "credits_used": decision.cost,
             }, event_type="reasoning")
 
-            bridge = _get_bridge()
             if bridge:
                 try:
                     await bridge.update_progress(sandbox_id, progress)
@@ -185,7 +214,10 @@ async def run_agent(sandbox_config: dict):
                 logger.info("Agent chose to stop (finish_reasoning with should_stop=True)")
                 break
 
+            await asyncio.sleep(1.0)
+
     finally:
+        live_url_task.cancel()
         await browser.close()
         if hasattr(payments, "close"):
             await payments.close()

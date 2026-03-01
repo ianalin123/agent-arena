@@ -9,4 +9,10 @@ crons.interval(
   internal.sandboxes.autoSettleExpired
 );
 
+crons.interval(
+  "cleanup-old-events",
+  { hours: 6 },
+  internal.events.cleanup
+);
+
 export default crons;

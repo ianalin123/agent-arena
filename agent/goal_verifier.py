@@ -10,7 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 class GoalVerifier:
-    def __init__(self, sandbox_config: dict[str, Any]):
+    def __init__(
+        self,
+        sandbox_config: dict[str, Any],
+        payments_tool: Any = None,
+        email_tool: Any = None,
+    ):
         self.config = sandbox_config
         self.goal_type = sandbox_config.get("goal_type", "")
         self.target = sandbox_config.get("target_value", 0)
@@ -18,6 +23,8 @@ class GoalVerifier:
         self.time_limit = sandbox_config.get("time_limit", 86400)
         self._current_progress: float = 0
         self._http = httpx.AsyncClient(timeout=15.0)
+        self._payments = payments_tool
+        self._email = email_tool
 
     @property
     def goal_achieved(self) -> bool:
@@ -92,20 +99,17 @@ class GoalVerifier:
         return self._current_progress
 
     async def _check_revenue(self) -> float:
-        """Check revenue via Locus wallet transaction totals."""
-        from tools.payments import PaymentsTool
+        """Check revenue via Paylocus wallet transaction totals."""
+        if not self._payments:
+            return self._current_progress
 
         try:
-            tool = PaymentsTool()
-            if not tool._available:
-                return self._current_progress
-            history = await tool.get_transaction_history()
+            history = await self._payments.get_transaction_history()
             total_earned = sum(
                 float(tx.get("amount_usdc", 0))
                 for tx in history
                 if tx.get("status") == "SUCCESS"
             )
-            await tool.close()
             return total_earned
         except Exception as e:
             logger.debug("Revenue check failed: %s", e)
@@ -132,14 +136,11 @@ class GoalVerifier:
 
     async def _count_positive_replies(self) -> float:
         """Count positive email replies via AgentMail."""
-        from tools.email import EmailTool
-        inbox_id = self.config.get("agentmail_inbox_id", "")
-        if not inbox_id:
+        if not self._email:
             return self._current_progress
 
         try:
-            tool = EmailTool(inbox_id=inbox_id)
-            count = await tool.count_positive_replies()
+            count = await self._email.count_positive_replies()
             return float(count)
         except Exception as e:
             logger.debug("Positive replies count failed: %s", e)

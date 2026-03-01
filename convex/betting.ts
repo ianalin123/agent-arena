@@ -17,7 +17,7 @@ export const getBets = query({
     return await ctx.db
       .query("bets")
       .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
-      .collect();
+      .take(200);
   },
 });
 
@@ -27,7 +27,7 @@ export const getUserBets = query({
     return await ctx.db
       .query("bets")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
+      .take(200);
   },
 });
 

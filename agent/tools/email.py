@@ -1,5 +1,6 @@
 """AgentMail integration — email capabilities for agents."""
 
+import asyncio
 import os
 import logging
 from typing import Any
@@ -22,9 +23,16 @@ class EmailTool:
                 inbox_id=self.inbox_id,
                 labels=["inbox"],
             )
+            thread_list = threads.threads or []
+            if not thread_list:
+                return []
+
+            thread_details = await asyncio.gather(
+                *(self.client.threads.get(t.id) for t in thread_list)
+            )
+
             messages = []
-            for thread in threads.threads or []:
-                thread_detail = await self.client.threads.get(thread.id)
+            for thread, thread_detail in zip(thread_list, thread_details):
                 if thread_detail.messages:
                     last_msg = thread_detail.messages[-1]
                     messages.append({
@@ -74,14 +82,21 @@ class EmailTool:
                 inbox_id=self.inbox_id,
                 labels=["inbox"],
             )
+            thread_list = threads.threads or []
+            if not thread_list:
+                return 0
+
+            thread_details = await asyncio.gather(
+                *(self.client.threads.get(t.id) for t in thread_list)
+            )
+
             positive_count = 0
             positive_signals = [
                 "yes", "sure", "interested", "love", "great", "sounds good",
                 "let's do it", "happy to", "would love", "absolutely", "count me in",
             ]
 
-            for thread in threads.threads or []:
-                thread_detail = await self.client.threads.get(thread.id)
+            for thread_detail in thread_details:
                 if not thread_detail.messages or len(thread_detail.messages) < 2:
                     continue
                 last_msg = thread_detail.messages[-1]

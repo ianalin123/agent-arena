@@ -73,6 +73,24 @@ class BrowserTool:
             logger.error("Browser task failed: %s", e)
             return {"status": "error", "error": str(e)}
 
+    async def get_session_details(self) -> dict[str, Any]:
+        """Fetch current session state from Browser Use, including live_url."""
+        if not self.session_id:
+            return {}
+        try:
+            session = await self.client.sessions.get(self.session_id)
+            url = getattr(session, "live_url", None)
+            if url and not self.live_url:
+                self.live_url = url
+            return {
+                "session_id": self.session_id,
+                "status": getattr(session, "status", None),
+                "live_url": url,
+            }
+        except Exception as e:
+            logger.debug("Failed to get session details: %s", e)
+            return {}
+
     async def close(self) -> None:
         """Stop the Browser Use session and release the client."""
         if self.session_id:
