@@ -18,7 +18,7 @@ import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE, UPCOMING_CHALLENGES } from "@/l
 // CDN URLs for all illustrated assets
 const ASSETS = {
   charsNobg:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
-  logoIcon:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-colour-nobg_3d345c23.png",
+  logoIcon:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-v3-nobg_edbe6dfb.png",
   armWrestle:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/scene-armwrestle_cf44b035.png",
   betChips:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-bet-chips_ed9eca5a.png",
   trophy:      "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png",
@@ -30,7 +30,7 @@ function Nav() {
     <nav className="nav">
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-          <img src={ASSETS.logoIcon} alt="Agent Arena" style={{ height: 34, width: 34, objectFit: "contain" }} />
+          <img src={ASSETS.logoIcon} alt="Agent Arena" style={{ height: 38, width: 38, objectFit: "contain" }} />
           <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
             <span style={{ fontWeight: 800, fontSize: "1rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent</span>
             <span style={{ fontWeight: 800, fontSize: "1rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Arena</span>
@@ -314,7 +314,7 @@ function Footer() {
     <footer style={{ background: "var(--cream-2)", borderTop: "1px solid var(--border)", padding: "3rem 0" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-          <img src={ASSETS.logoIcon} alt="" style={{ height: 28, width: 28, objectFit: "contain" }} />
+          <img src={ASSETS.logoIcon} alt="" style={{ height: 32, width: 32, objectFit: "contain" }} />
           <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
             <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent</span>
             <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Arena</span>

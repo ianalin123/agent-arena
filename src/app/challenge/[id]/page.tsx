@@ -23,7 +23,7 @@ import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE } from "@/lib/arena-data";
 
 // CDN URLs for illustrated assets
 const ASSETS = {
-  logoIcon:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-colour-nobg_3d345c23.png",
+  logoIcon:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-v3-nobg_edbe6dfb.png",
   trophy:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png",
   betChips:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-bet-chips_ed9eca5a.png",
   chartUp:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-chart-up_23c5aab8.png",
@@ -149,7 +149,7 @@ function Nav({ title }: { title: string }) {
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <Link href="/" className="btn-ghost" style={{ padding: "0.375rem 0.5rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-            <img src={ASSETS.logoIcon} alt="" style={{ height: 28, width: 28, objectFit: "contain" }} />
+            <img src={ASSETS.logoIcon} alt="" style={{ height: 32, width: 32, objectFit: "contain" }} />
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
               <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent</span>
               <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Arena</span>
