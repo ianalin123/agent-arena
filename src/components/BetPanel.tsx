@@ -20,6 +20,7 @@ export function BetPanel({
   onPlaceBet,
 }: BetPanelProps) {
   const [selected, setSelected] = useState<"claude" | "openai" | null>(null);
+  const MAX_BET = 500;
   const [amount, setAmount] = useState("10");
   const [placed, setPlaced] = useState(false);
 
@@ -31,7 +32,8 @@ export function BetPanel({
 
   function handlePlace() {
     if (!selected || !amount || !bettingOpen) return;
-    onPlaceBet?.(selected, parseFloat(amount));
+    const capped = Math.min(parseFloat(amount), MAX_BET);
+    onPlaceBet?.(selected, capped);
     setPlaced(true);
     setTimeout(() => setPlaced(false), 3000);
   }
@@ -82,15 +84,21 @@ export function BetPanel({
           type="number"
           className="bet-amount-input"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val) && val > MAX_BET) setAmount(String(MAX_BET));
+            else setAmount(e.target.value);
+          }}
           placeholder="$0.00"
           min="1"
+          max={MAX_BET}
           disabled={!bettingOpen}
         />
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-          {["5", "10", "25", "50"].map((v) => (
+          {["10", "25", "100", "500"].map((v) => (
             <button key={v} className="quick-amount" onClick={() => setAmount(v)} disabled={!bettingOpen}>${v}</button>
           ))}
+          <span style={{ fontSize: "0.75rem", color: "var(--ink-3)", alignSelf: "center", marginLeft: "0.25rem" }}>Max $500</span>
         </div>
       </div>
 
@@ -125,7 +133,7 @@ export function BetPanel({
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span className="text-label">Watchers</span>
-          <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)" }}>{viewers.toLocaleString()}</span>
+          <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)" }}>0</span>
         </div>
       </div>
     </div>
