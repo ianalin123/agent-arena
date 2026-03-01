@@ -31,6 +31,7 @@ interface ChartPoint {
   t: number;
   claude: number;
   openai: number;
+  eventLabel?: string;
 }
 
 const CLAUDE_URLS = [
@@ -414,10 +415,11 @@ function ConvexChallengePage({ id }: { id: string }) {
     : undefined;
 
   const chartData: ChartPoint[] = oddsHistory
-    ? oddsHistory.map((h: { timestamp: number; claudePct: number; openaiPct: number }) => ({
+    ? oddsHistory.map((h: { timestamp: number; claudePct: number; openaiPct: number; eventLabel?: string }) => ({
         t: h.timestamp,
         claude: h.claudePct,
         openai: h.openaiPct,
+        ...(h.eventLabel ? { eventLabel: h.eventLabel } : {}),
       }))
     : [];
 

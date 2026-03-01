@@ -68,6 +68,7 @@ export default defineSchema({
     claudePct: v.number(),
     openaiPct: v.number(),
     timestamp: v.number(),
+    eventLabel: v.optional(v.string()), // set when a >5% swing occurs
   }).index("by_challenge_time", ["challengeId", "timestamp"]),
 
   bets: defineTable({
