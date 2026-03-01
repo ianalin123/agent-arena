@@ -8,10 +8,12 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as autumnCheckout from "../autumnCheckout.js";
 import type * as autumnWebhook from "../autumnWebhook.js";
 import type * as betting from "../betting.js";
 import type * as browserUse from "../browserUse.js";
+import type * as challenges from "../challenges.js";
 import type * as credits from "../credits.js";
 import type * as crons from "../crons.js";
 import type * as emails from "../emails.js";
@@ -32,10 +34,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   autumnCheckout: typeof autumnCheckout;
   autumnWebhook: typeof autumnWebhook;
   betting: typeof betting;
   browserUse: typeof browserUse;
+  challenges: typeof challenges;
   credits: typeof credits;
   crons: typeof crons;
   emails: typeof emails;
