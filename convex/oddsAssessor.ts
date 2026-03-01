@@ -69,21 +69,16 @@ export const writeOdds = internalMutation({
     challengeId: v.id("challenges"),
     claudePct: v.number(),
     openaiPct: v.number(),
+    eventLabel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Record to history
     await ctx.db.insert("oddsHistory", {
       challengeId: args.challengeId,
       claudePct: args.claudePct,
       openaiPct: args.openaiPct,
       timestamp: Date.now(),
+      ...(args.eventLabel ? { eventLabel: args.eventLabel } : {}),
     });
-
-    // Update the bettingPool's implied odds (stored as yesTotal/noTotal ratio)
-    // We don't change the actual money — just update the display odds
-    // by storing the AI-assessed probability in a separate field if available,
-    // or by adjusting the pool ratio to reflect the new odds.
-    // For now we store the AI odds directly in oddsHistory and the frontend reads from there.
   },
 });
 
@@ -229,9 +224,19 @@ The two numbers must sum to 100. Make conservative adjustments (max ±8 points p
   const finalClaudePct = Math.max(5, Math.min(95, blendedClaudePct));
   const finalOpenaiPct = 100 - finalClaudePct;
 
+  // Detect if this is a key event (>5% swing from last recorded odds)
+  const swing = Math.abs(finalClaudePct - baseClaudePct);
+  let eventLabel: string | undefined;
+  if (swing > 5) {
+    const winner = finalClaudePct > baseClaudePct ? "Claude" : "OpenAI";
+    const swingStr = swing.toFixed(0);
+    eventLabel = `${winner} +${swingStr}%`;
+  }
+
   await ctx.runMutation(internal.oddsAssessor.writeOdds, {
     challengeId,
     claudePct: Math.round(finalClaudePct * 10) / 10,
     openaiPct: Math.round(finalOpenaiPct * 10) / 10,
+    ...(eventLabel ? { eventLabel } : {}),
   });
 }
