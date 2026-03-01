@@ -624,10 +624,31 @@ export const getOddsByChallenge = query({
       };
     }
     const totalPool = pool.yesTotal + pool.noTotal;
-    const claudeOdds = pool.yesTotal > 0 ? totalPool / pool.yesTotal : 1;
-    const openaiOdds = pool.noTotal > 0 ? totalPool / pool.noTotal : 1;
-    const claudePct = totalPool > 0 ? pool.yesTotal / totalPool : 0.5;
-    const openaiPct = totalPool > 0 ? pool.noTotal / totalPool : 0.5;
+
+    // Raw pool-based percentages (0–1 scale)
+    const poolClaudePct = totalPool > 0 ? pool.yesTotal / totalPool : 0.5;
+    const poolOpenaiPct = totalPool > 0 ? pool.noTotal / totalPool : 0.5;
+
+    // Blend with AI-assessed odds if available (60% pool + 40% AI)
+    const aiClaude = pool.aiClaudePct != null ? pool.aiClaudePct / 100 : null;
+    const aiOpenai = pool.aiOpenaiPct != null ? pool.aiOpenaiPct / 100 : null;
+
+    let claudePct: number;
+    let openaiPct: number;
+    if (aiClaude != null && aiOpenai != null) {
+      claudePct = totalPool > 0
+        ? 0.6 * poolClaudePct + 0.4 * aiClaude
+        : aiClaude; // no bets yet — use AI only
+      openaiPct = 1 - claudePct;
+    } else {
+      claudePct = poolClaudePct;
+      openaiPct = poolOpenaiPct;
+    }
+
+    // Parimutuel payout multipliers (5% house edge)
+    const claudeOdds = claudePct > 0 ? parseFloat((0.95 / claudePct).toFixed(3)) : 1;
+    const openaiOdds = openaiPct > 0 ? parseFloat((0.95 / openaiPct).toFixed(3)) : 1;
+
     return {
       claudeOdds,
       openaiOdds,
@@ -635,6 +656,7 @@ export const getOddsByChallenge = query({
       openaiPct,
       totalPool,
       bettingOpen: pool.bettingOpen,
+      oddsUpdatedAt: pool.oddsUpdatedAt ?? null,
     };
   },
 });
