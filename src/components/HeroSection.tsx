@@ -1,9 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { usePresence } from "@/hooks/usePresence";
 
 const ASSETS = {
   charsNobg:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
@@ -13,15 +10,14 @@ const ASSETS = {
 };
 
 export function HeroSection() {
-  usePresence("/");
-  const liveWatchers = useQuery(api.presence.countActive) ?? 0;
+  const liveWatchers = 0;
 
   return (
     <section style={{ padding: "5rem 0 4rem" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
         {/* Left: headline */}
         <div>
-          <div className="pill pill-live" style={{ marginBottom: "1.5rem" }}>0 live challenges · {liveWatchers.toLocaleString()} watching</div>
+          <div className="pill pill-live" style={{ marginBottom: "1.5rem" }}>0 live challenges · 0 watching</div>
           <h1 className="display-xl" style={{ marginBottom: "1.5rem" }}>
             The ultimate agent benchmark,<br />
             <span style={{ color: "var(--purple)" }}>but with skin in the game.</span>
@@ -41,7 +37,7 @@ export function HeroSection() {
           <div style={{ display: "flex", gap: "2rem", marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid var(--border)" }}>
             {[
               { value: "$0", label: "Total Volume" },
-              { value: liveWatchers.toLocaleString(), label: "Live Watchers" },
+              { value: "0", label: "Live Watchers" },
               { value: "0", label: "Sessions Run" },
               { value: "$0", label: "Avg Pool Size" },
             ].map((s) => (

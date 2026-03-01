@@ -138,15 +138,6 @@ export default defineSchema({
     .index("by_sandbox_time", ["sandboxId", "timestamp"])
     .index("by_timestamp", ["timestamp"]),
 
-  presence: defineTable({
-    sessionId: v.string(),
-    path: v.string(),
-    lastSeen: v.number(),
-  })
-    .index("by_session", ["sessionId"])
-    .index("by_last_seen", ["lastSeen"])
-    .index("by_path", ["path"]),
-
   screenshots: defineTable({
     sandboxId: v.id("sandboxes"),
     storageId: v.id("_storage"),

@@ -9,7 +9,6 @@ import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE } from "@/lib/arena-data";
 import { Nav } from "@/components/Nav";
 import { NavAuth } from "@/components/NavAuth";
 import { GoalBanner } from "@/components/GoalBanner";
-import { usePresence } from "@/hooks/usePresence";
 import { VMWindow } from "@/components/VMWindow";
 import { BetPanel } from "@/components/BetPanel";
 import { ProbabilityChart } from "@/components/ProbabilityChart";
@@ -150,7 +149,6 @@ function eventsToActions(events: Array<{ eventType: string; payload: string; tim
 }
 
 function DemoChallengePage({ id }: { id: string }) {
-  usePresence(`/challenge/${id}`);
   const isFollowers = id === "followers";
   const challenge = isFollowers ? FOLLOWERS_CHALLENGE : REVENUE_CHALLENGE;
   const claudeActionsList = isFollowers ? CLAUDE_ACTIONS : REVENUE_CLAUDE_ACTIONS;
@@ -316,7 +314,6 @@ function DemoChallengePage({ id }: { id: string }) {
 }
 
 function ConvexChallengePage({ id }: { id: string }) {
-  usePresence(`/challenge/${id}`);
   const challengeId = id as Id<"challenges">;
 
   const challengeData = useQuery(api.challenges.get, { challengeId });
