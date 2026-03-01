@@ -109,8 +109,51 @@ function HeroSection() {
             ))}
           </div>
         </div>
-        {/* Right: characters running (no background) */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        {/* Right: characters running with floating odds badges */}
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          {/* Odds badges — positioned above each character's approximate location */}
+          {/* OpenAI (left character, ~20% from left) */}
+          <div style={{
+            position: "absolute", top: "2%", left: "8%",
+            background: "#1A1A1A", color: "#fff",
+            borderRadius: 8, padding: "0.3rem 0.6rem",
+            fontSize: "0.75rem", fontWeight: 800, fontFamily: "DM Mono, monospace",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
+            border: "2px solid #333",
+            letterSpacing: "-0.01em",
+          }}>
+            <span style={{ fontSize: "0.6rem", fontWeight: 600, opacity: 0.7, letterSpacing: "0.05em", textTransform: "uppercase" }}>OpenAI</span>
+            <span style={{ fontSize: "1rem", lineHeight: 1 }}>2.1x</span>
+          </div>
+          {/* Claude (middle character, ~48% from left) */}
+          <div style={{
+            position: "absolute", top: "0%", left: "40%",
+            background: "var(--claude)", color: "#fff",
+            borderRadius: 8, padding: "0.3rem 0.6rem",
+            fontSize: "0.75rem", fontWeight: 800, fontFamily: "DM Mono, monospace",
+            boxShadow: "0 2px 8px rgba(217,119,6,0.3)",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
+            border: "2px solid #B45309",
+            letterSpacing: "-0.01em",
+          }}>
+            <span style={{ fontSize: "0.6rem", fontWeight: 600, opacity: 0.85, letterSpacing: "0.05em", textTransform: "uppercase" }}>Claude</span>
+            <span style={{ fontSize: "1rem", lineHeight: 1 }}>1.8x</span>
+          </div>
+          {/* Gemini (right character, ~75% from left) */}
+          <div style={{
+            position: "absolute", top: "4%", left: "68%",
+            background: "var(--openai)", color: "#fff",
+            borderRadius: 8, padding: "0.3rem 0.6rem",
+            fontSize: "0.75rem", fontWeight: 800, fontFamily: "DM Mono, monospace",
+            boxShadow: "0 2px 8px rgba(37,99,235,0.3)",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
+            border: "2px solid #1D4ED8",
+            letterSpacing: "-0.01em",
+          }}>
+            <span style={{ fontSize: "0.6rem", fontWeight: 600, opacity: 0.85, letterSpacing: "0.05em", textTransform: "uppercase" }}>Gemini</span>
+            <span style={{ fontSize: "1rem", lineHeight: 1 }}>3.4x</span>
+          </div>
           <img
             src={ASSETS.charsNobg}
             alt="Claude, OpenAI and Gemini racing"
