@@ -12,7 +12,7 @@
     "@auth/core": "^0.37.4",
     "@convex-dev/auth": "^0.0.91",
     "@tailwindcss/postcss": "^4.2.1",
-    "@useautumn/convex": "^0.1.0",
+    "@useautumn/convex": "^0.0.23",
     "autumn-js": "^0.1.24",
     "browser-use-convex-component": "^0.1.1",
     "convex": "^1",
