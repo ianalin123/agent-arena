@@ -1,15 +1,15 @@
 """Browser Use integration — cloud-hosted browser automation for agents.
 
-Uses Browser Use's high-level task API: give it a natural language task
-and it handles all browser actions internally. Sessions provide a live_url
-for real-time browser streaming and a public share URL for embedding.
+Uses Browser Use's v3 BU Agent API: give it a natural language task
+and it handles all browser actions autonomously. Sessions provide a live_url
+for real-time browser monitoring.
 """
 
 import os
 import logging
 from typing import Any
 
-from browser_use_sdk import AsyncBrowserUse
+from browser_use_sdk.v3 import AsyncBrowserUse, BrowserUseError
 
 logger = logging.getLogger(__name__)
 
@@ -20,23 +20,16 @@ class BrowserTool:
         self.client = AsyncBrowserUse(api_key=self.api_key)
         self.session_id: str | None = None
         self.live_url: str | None = None
-        self.share_url: str | None = None
-        self._last_screenshot: str | None = None
 
     async def create_session(self) -> None:
-        """Initialize a persistent Browser Use cloud session with live streaming."""
-        session = await self.client.sessions.create()
-        self.session_id = session.id
+        """Create an idle Browser Use cloud session for reuse across tasks."""
+        session = await self.client.sessions.create(keep_alive=True)
+        self.session_id = str(session.id)
         self.live_url = getattr(session, "live_url", None)
-        logger.info("Browser session created: %s (live_url=%s)", self.session_id, self.live_url)
-
-        try:
-            share = await self.client.sessions.create_share(session.id)
-            self.share_url = getattr(share, "url", None)
-            logger.info("Share URL created: %s", self.share_url)
-        except Exception as e:
-            logger.warning("Could not create share URL: %s", e)
-            self.share_url = None
+        logger.info(
+            "Browser session created: %s (live_url=%s)",
+            self.session_id, self.live_url,
+        )
 
     async def execute(self, action: dict[str, Any]) -> dict[str, Any]:
         """Execute a high-level browser task via natural language.
@@ -44,7 +37,7 @@ class BrowserTool:
         The action dict should contain:
           {"task": "Natural language description of what to do"}
 
-        Browser Use handles all low-level browser orchestration internally.
+        The BU Agent handles all clicking, typing, navigation autonomously.
         """
         task = action.get("task", "")
         if not task:
@@ -57,36 +50,40 @@ class BrowserTool:
             result = await self.client.run(
                 task,
                 session_id=self.session_id,
+                keep_alive=True,
             )
 
-            if result.steps:
-                last_step = result.steps[-1]
-                if hasattr(last_step, "screenshot") and last_step.screenshot:
-                    self._last_screenshot = last_step.screenshot
+            if not self.live_url and result.live_url:
+                self.live_url = result.live_url
 
             return {
                 "status": "completed",
                 "output": result.output or "",
-                "task_id": result.id,
-                "steps": len(result.steps) if result.steps else 0,
+                "task_id": str(result.id),
+                "session_status": str(result.status),
+                "cost_usd": result.total_cost_usd or "0",
             }
+        except TimeoutError:
+            logger.error("Browser task timed out: %s", task[:100])
+            return {"status": "error", "error": "Task timed out (5 min limit)"}
+        except BrowserUseError as e:
+            logger.error("Browser Use API error: %s", e)
+            return {"status": "error", "error": str(e)}
         except Exception as e:
             logger.error("Browser task failed: %s", e)
             return {"status": "error", "error": str(e)}
 
-    def get_last_screenshot(self) -> str | None:
-        """Return the last screenshot captured from task steps (fallback for live_url)."""
-        return self._last_screenshot
-
     async def close(self) -> None:
-        """Tear down the Browser Use session."""
+        """Stop the Browser Use session and release the client."""
         if self.session_id:
             try:
                 await self.client.sessions.stop(self.session_id)
             except Exception as e:
                 logger.debug("Error stopping session: %s", e)
+        try:
+            await self.client.close()
+        except Exception:
+            pass
         self.session_id = None
         self.live_url = None
-        self.share_url = None
-        self._last_screenshot = None
         logger.info("Browser session closed")

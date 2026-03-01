@@ -82,8 +82,10 @@ async def run_agent(sandbox_config: dict):
 
     await browser.create_session()
 
-    if browser.live_url or browser.share_url:
-        await _push_live_url(sandbox_id, browser.live_url or "", browser.share_url or "")
+    _live_url_pushed = False
+    if browser.live_url:
+        await _push_live_url(sandbox_id, browser.live_url, "")
+        _live_url_pushed = True
 
     try:
         while credits > 0 and not verifier.goal_achieved and not verifier.time_expired:
@@ -104,7 +106,7 @@ async def run_agent(sandbox_config: dict):
                 )
 
             stuck_hint = _detect_loop(recent_actions)
-            screenshot = browser.get_last_screenshot() or ""
+            screenshot = ""
 
             decision = await _think_step_with_fallback(
                 fallback_chain, goal, screenshot, emails, balance,
@@ -112,6 +114,10 @@ async def run_agent(sandbox_config: dict):
             )
 
             result = await _execute_action(decision, browser, mail, payments, sandbox_id)
+
+            if browser.live_url and not _live_url_pushed:
+                await _push_live_url(sandbox_id, browser.live_url, "")
+                _live_url_pushed = True
 
             memory.add(
                 content=f"Action: {decision.action_type} {decision.action}, Result: {result}",
