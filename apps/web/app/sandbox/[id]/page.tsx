@@ -10,6 +10,7 @@ import { GoalProgress } from "../../../components/GoalProgress";
 import { ActivityFeed } from "../../../components/ActivityFeed";
 import { PromptInput } from "../../../components/PromptInput";
 import { CreditInjection } from "../../../components/CreditInjection";
+import { LogStream } from "../../../components/LogStream";
 import type { Id } from "@/convex/types";
 
 export default function SandboxPage() {
@@ -51,6 +52,7 @@ export default function SandboxPage() {
             shareUrl={(sandbox as any).shareUrl}
           />
           <AgentThinking sandboxId={sandboxId} events={recentEvents} />
+          <LogStream sandboxId={sandboxId} maxHeight="20rem" />
           <ActivityFeed sandboxId={sandboxId} events={recentEvents} payments={recentPayments} />
         </div>
 

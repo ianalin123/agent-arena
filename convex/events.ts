@@ -30,3 +30,13 @@ export const recent = query({
       .take(args.limit ?? 20);
   },
 });
+
+export const recentAll = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("agentEvents")
+      .order("desc")
+      .take(args.limit ?? 50);
+  },
+});

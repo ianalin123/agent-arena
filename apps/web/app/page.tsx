@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/api";
 import { SandboxCard } from "../components/SandboxCard";
 import { ModelComparison } from "../components/ModelComparison";
+import { LogStream } from "../components/LogStream";
 
 export default function Dashboard() {
   const sandboxes = useQuery(api.sandboxes.list) ?? [];
@@ -49,6 +50,11 @@ export default function Dashboard() {
       </section>
 
       {sandboxes.length > 0 && <ModelComparison sandboxes={sandboxes} />}
+
+      <section className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Live Event Stream</h2>
+        <LogStream maxHeight="28rem" />
+      </section>
     </div>
   );
 }
