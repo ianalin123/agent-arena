@@ -1,5 +1,15 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+
+export const currentUser = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    return await ctx.db.get(userId);
+  },
+});
 
 export const create = mutation({
   args: {
@@ -28,7 +38,7 @@ export const getByEmail = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("email", (q) => q.eq("email", args.email))
       .first();
   },
 });
@@ -41,7 +51,7 @@ export const ensureTestUser = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("email", (q) => q.eq("email", args.email))
       .first();
     if (existing) return existing._id;
     return await ctx.db.insert("users", {
@@ -73,7 +83,7 @@ export const addToBalance = internalMutation({
     const user = await ctx.db.get(args.userId);
     if (!user) return;
     await ctx.db.patch(args.userId, {
-      balance: user.balance + args.amount,
+      balance: (user.balance ?? 0) + args.amount,
     });
   },
 });

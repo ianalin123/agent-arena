@@ -1,6 +1,15 @@
 import { httpRouter } from "convex/server";
+import { auth } from "./auth";
 import { lemonSqueezyWebhook } from "./lemonsqueezy";
 
-export default httpRouter({
-  "/lemonsqueezy-webhook": lemonSqueezyWebhook,
+const http = httpRouter();
+
+auth.addHttpRoutes(http);
+
+http.route({
+  path: "/lemonsqueezy-webhook",
+  method: "POST",
+  handler: lemonSqueezyWebhook,
 });
+
+export default http;

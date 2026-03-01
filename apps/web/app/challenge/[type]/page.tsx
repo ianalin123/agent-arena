@@ -26,6 +26,10 @@ export default function ChallengePage() {
     goalType,
   });
 
+  // #region agent log
+  fetch('http://127.0.0.1:7405/ingest/4e79ba50-ea0a-47f3-988f-e806a4b369cf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7c7e31'},body:JSON.stringify({sessionId:'7c7e31',location:'apps/web/app/challenge/[type]/page.tsx:27',message:'Challenge page query result',data:{goalTypeFromUrl:goalType,activeSandboxesResult:activeSandboxes,activeSandboxesIsUndefined:activeSandboxes===undefined,activeSandboxesIsNull:activeSandboxes===null,activeSandboxesLength:activeSandboxes?.length??'N/A'},timestamp:Date.now(),hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
+  // #endregion
+
   const sandbox = activeSandboxes?.[0] ?? null;
   const sandboxId = sandbox?._id as string | null;
 

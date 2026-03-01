@@ -21,7 +21,6 @@ export function CreditInjection({ sandboxId }: CreditInjectionProps) {
     try {
       await inject({
         sandboxId: sandboxId as Id<"sandboxes">,
-        userId: "placeholder" as Id<"users">,
         amount,
       });
       setSuccess(true);

@@ -1,7 +1,23 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
+  ...authTables,
+
+  users: defineTable({
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    balance: v.optional(v.number()),
+  })
+    .index("email", ["email"])
+    .index("phone", ["phone"]),
+
   sandboxes: defineTable({
     goalDescription: v.string(),
     goalType: v.string(),
@@ -48,7 +64,6 @@ export default defineSchema({
     yesTotal: v.number(),
     noTotal: v.number(),
     bettingOpen: v.boolean(),
-    /** Platform take (5% of prize pool) recorded after settlement. */
     platformTake: v.optional(v.number()),
   }).index("by_sandbox", ["sandboxId"]),
 
@@ -99,10 +114,4 @@ export default defineSchema({
     storageId: v.id("_storage"),
     timestamp: v.number(),
   }).index("by_sandbox_time", ["sandboxId", "timestamp"]),
-
-  users: defineTable({
-    name: v.string(),
-    email: v.string(),
-    balance: v.number(),
-  }).index("by_email", ["email"]),
 });

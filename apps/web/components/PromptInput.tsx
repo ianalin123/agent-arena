@@ -22,7 +22,6 @@ export function PromptInput({ sandboxId }: PromptInputProps) {
     try {
       await submitPrompt({
         sandboxId: sandboxId as Id<"sandboxes">,
-        userId: "placeholder" as Id<"users">,
         promptText: prompt.trim(),
       });
       setPrompt("");

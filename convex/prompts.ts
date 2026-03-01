@@ -1,16 +1,19 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const submit = mutation({
   args: {
     sandboxId: v.id("sandboxes"),
-    userId: v.id("users"),
     promptText: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in to submit a prompt");
+
     await ctx.db.insert("promptInjections", {
       sandboxId: args.sandboxId,
-      userId: args.userId,
+      userId,
       promptText: args.promptText,
       injectedAt: Date.now(),
       acknowledged: false,

@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -14,17 +15,19 @@ export const getForSandbox = query({
 export const inject = mutation({
   args: {
     sandboxId: v.id("sandboxes"),
-    userId: v.id("users"),
     amount: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user || user.balance < args.amount) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in to inject credits");
+
+    const user = await ctx.db.get(userId);
+    if (!user || (user.balance ?? 0) < args.amount) {
       throw new Error("Insufficient balance");
     }
 
-    await ctx.db.patch(args.userId, {
-      balance: user.balance - args.amount,
+    await ctx.db.patch(userId, {
+      balance: (user.balance ?? 0) - args.amount,
     });
 
     const sandbox = await ctx.db.get(args.sandboxId);
@@ -36,7 +39,7 @@ export const inject = mutation({
 
     await ctx.db.insert("creditTransactions", {
       sandboxId: args.sandboxId,
-      userId: args.userId,
+      userId,
       amount: args.amount,
       type: "topup",
       createdAt: Date.now(),

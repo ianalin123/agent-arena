@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -34,11 +35,13 @@ export const getUserBets = query({
 export const placeBet = mutation({
   args: {
     sandboxId: v.id("sandboxes"),
-    userId: v.id("users"),
     amount: v.number(),
     position: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in to place a bet");
+
     const pool = await ctx.db
       .query("bettingPools")
       .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
@@ -63,13 +66,13 @@ export const placeBet = mutation({
       }
     }
 
-    const user = await ctx.db.get(args.userId);
-    if (!user || user.balance < args.amount) {
+    const user = await ctx.db.get(userId);
+    if (!user || (user.balance ?? 0) < args.amount) {
       throw new Error("Insufficient balance");
     }
 
-    await ctx.db.patch(args.userId, {
-      balance: user.balance - args.amount,
+    await ctx.db.patch(userId, {
+      balance: (user.balance ?? 0) - args.amount,
     });
 
     const poolUpdate =
@@ -86,7 +89,7 @@ export const placeBet = mutation({
 
     await ctx.db.insert("bets", {
       sandboxId: args.sandboxId,
-      userId: args.userId,
+      userId,
       amount: args.amount,
       position: args.position,
       oddsAtPlacement: newTotal / winningPool,
@@ -134,7 +137,7 @@ export const settle = mutation({
       if (payout > 0) {
         const user = await ctx.db.get(bet.userId);
         if (user) {
-          await ctx.db.patch(bet.userId, { balance: user.balance + payout });
+          await ctx.db.patch(bet.userId, { balance: (user.balance ?? 0) + payout });
         }
       }
     }
@@ -219,7 +222,7 @@ export const settleExpired = internalMutation({
       if (payout > 0) {
         const user = await ctx.db.get(bet.userId);
         if (user) {
-          await ctx.db.patch(bet.userId, { balance: user.balance + payout });
+          await ctx.db.patch(bet.userId, { balance: (user.balance ?? 0) + payout });
         }
       }
     }
@@ -250,7 +253,7 @@ export const refund = mutation({
       const user = await ctx.db.get(bet.userId);
       if (user) {
         await ctx.db.patch(bet.userId, {
-          balance: user.balance + bet.amount,
+          balance: (user.balance ?? 0) + bet.amount,
         });
       }
     }

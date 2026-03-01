@@ -29,6 +29,10 @@ export default function Dashboard() {
   const activeSandboxes = sandboxes.filter((s: any) => s.status === "active");
   const challenges = groupByGoalType(activeSandboxes.length > 0 ? activeSandboxes : sandboxes);
 
+  // #region agent log
+  if (sandboxes.length > 0) { fetch('http://127.0.0.1:7405/ingest/4e79ba50-ea0a-47f3-988f-e806a4b369cf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7c7e31'},body:JSON.stringify({sessionId:'7c7e31',location:'apps/web/app/page.tsx:31',message:'Dashboard sandbox data',data:{totalSandboxes:sandboxes.length,activeSandboxesCount:activeSandboxes.length,challengesCount:challenges.length,sandboxStatuses:sandboxes.map((s:any)=>({id:s._id,status:s.status,goalType:s.goalType})),challengeGoalTypes:challenges.map((c:any)=>({id:c._id,goalType:c.goalType,status:c.status})),usedFallback:activeSandboxes.length===0},timestamp:Date.now(),hypothesisId:'A,C,D,E'})}).catch(()=>{}); }
+  // #endregion
+
   return (
     <div>
       {/* Hero */}

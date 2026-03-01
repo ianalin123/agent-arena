@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/api";
 import type { Id } from "@/convex/types";
 
+
 interface BettingPanelProps {
   sandboxId: string;
   pool?: any;
@@ -38,7 +39,6 @@ export function BettingPanel({ sandboxId, pool }: BettingPanelProps) {
     try {
       await placeBet({
         sandboxId: sandboxId as Id<"sandboxes">,
-        userId: "placeholder" as Id<"users">,
         amount,
         position,
       });

@@ -2,9 +2,11 @@
 
 import "./globals.css";
 import { DM_Sans, DM_Mono } from "next/font/google";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexReactClient } from "convex/react";
+import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
 import { ReactNode, useState } from "react";
 import Link from "next/link";
+import { NavAuth } from "@/components/NavAuth";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -38,7 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className={`${dmSans.variable} ${dmMono.variable}`}>
         {client ? (
-          <ConvexProvider client={client}>
+          <ConvexAuthNextjsProvider client={client}>
             <nav
               style={{
                 borderBottom: "1px solid var(--border-light)",
@@ -84,12 +86,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
               <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
                 <Link href="/" className="nav-link">Challenges</Link>
-                <span
-                  className="pill pill-neutral"
-                  style={{ fontSize: 12 }}
-                >
-                  Play Money: $1,000
-                </span>
+                <NavAuth />
               </div>
             </nav>
 
@@ -102,7 +99,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             >
               {children}
             </main>
-          </ConvexProvider>
+          </ConvexAuthNextjsProvider>
         ) : (
           <div style={{ padding: 48, textAlign: "center", color: "var(--ink-muted)" }}>
             Missing NEXT_PUBLIC_CONVEX_URL — set it in .env.local to connect to Convex.
