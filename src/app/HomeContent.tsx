@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { Nav } from "@/components/Nav";
 import { NavAuth } from "@/components/NavAuth";
 import { AddFundsButton } from "@/components/AddFundsButton";
-// LiveTicker removed — will be re-added when live data is connected
 import { HeroSection } from "@/components/HeroSection";
 import {
   FOLLOWERS_CHALLENGE,
@@ -17,6 +17,7 @@ import {
   type Challenge,
 } from "@/lib/arena-data";
 
+// ─── Static demo card (used for the two hardcoded demo challenges) ───────────
 function ChallengeCard({ challenge, href }: { challenge: Challenge; href: string }) {
   const [claudeWin, setClaudeWin] = useState(challenge.agents.claude.probWin);
   const [claudeProgress, setClaudeProgress] = useState(challenge.agents.claude.currentValue / challenge.goalValue * 100);
@@ -69,31 +70,25 @@ function ChallengeCard({ challenge, href }: { challenge: Challenge; href: string
               <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--claude)" }} />
                 <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--ink)" }}>Claude</span>
-                {claudeAhead && <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "var(--claude)", background: "var(--claude-bg)", padding: "1px 6px", borderRadius: 999 }}>AHEAD</span>}
               </div>
-              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--claude)" }}>{claudeWin.toFixed(0)}%</span>
+              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--claude)" }}>{claudeWin.toFixed(0)}%</span>
             </div>
             <div className="progress-track">
-              <div className="progress-fill-claude" style={{ width: `${claudeProgress}%` }} />
+              <div className="progress-fill-claude" style={{ width: `${claudeProgress}%`, transition: "width 1s ease" }} />
             </div>
-            <div className="text-label" style={{ marginTop: "0.25rem" }}>{claudeProgress.toFixed(1)}% of goal</div>
           </div>
-
           <div style={{ textAlign: "center", fontWeight: 800, fontSize: "0.875rem", color: "var(--ink-3)" }}>VS</div>
-
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.375rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--openai)" }} />
                 <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--ink)" }}>OpenAI</span>
-                {!claudeAhead && <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "var(--openai)", background: "var(--openai-bg)", padding: "1px 6px", borderRadius: 999 }}>AHEAD</span>}
               </div>
-              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--openai)" }}>{openaiWin.toFixed(0)}%</span>
+              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--openai)" }}>{openaiWin.toFixed(0)}%</span>
             </div>
             <div className="progress-track">
-              <div className="progress-fill-openai" style={{ width: `${openaiProgress}%` }} />
+              <div className="progress-fill-openai" style={{ width: `${openaiProgress}%`, transition: "width 1s ease" }} />
             </div>
-            <div className="text-label" style={{ marginTop: "0.25rem" }}>{openaiProgress.toFixed(1)}% of goal</div>
           </div>
         </div>
 
@@ -115,7 +110,40 @@ function ChallengeCard({ challenge, href }: { challenge: Challenge; href: string
   );
 }
 
-function ConvexChallengeCard({ challenge }: { challenge: { _id: string; goalDescription: string; goalType: string; targetValue: number; sessionNumber: number; status: string } }) {
+// ─── Live Convex challenge card ───────────────────────────────────────────────
+function ConvexChallengeCard({ challenge }: {
+  challenge: {
+    _id: string;
+    goalDescription: string;
+    goalType: string;
+    targetValue: number;
+    sessionNumber: number;
+    status: string;
+    claudeSandboxId: Id<"sandboxes">;
+    openaiSandboxId: Id<"sandboxes">;
+  }
+}) {
+  const challengeId = challenge._id as Id<"challenges">;
+
+  // Live odds + pool from Convex
+  const odds = useQuery(api.betting.getOddsByChallenge, { challengeId });
+
+  // Full challenge data including sandbox progress
+  const challengeData = useQuery(api.challenges.get, { challengeId });
+  const claudeSandbox = challengeData?.claudeSandbox;
+  const openaiSandbox = challengeData?.openaiSandbox;
+
+  const claudePct = odds?.claudePct ?? 0.5;
+  const openaiPct = odds?.openaiPct ?? 0.5;
+  const totalPool = odds?.totalPool ?? 0;
+
+  const claudeProgress = claudeSandbox
+    ? Math.min(100, (claudeSandbox.currentProgress / challenge.targetValue) * 100)
+    : 0;
+  const openaiProgress = openaiSandbox
+    ? Math.min(100, (openaiSandbox.currentProgress / challenge.targetValue) * 100)
+    : 0;
+
   const title = challenge.goalDescription || challenge.goalType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
   return (
@@ -134,6 +162,14 @@ function ConvexChallengeCard({ challenge }: { challenge: { _id: string; goalDesc
               {title}
             </h3>
           </div>
+          {totalPool > 0 && (
+            <div style={{ textAlign: "right" }}>
+              <div className="text-label">Pool</div>
+              <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.02em" }}>
+                ${totalPool >= 1000 ? `${(totalPool / 1000).toFixed(1)}k` : totalPool.toFixed(0)}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ background: "var(--purple-3)", borderRadius: 8, padding: "0.5rem 0.75rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -145,22 +181,28 @@ function ConvexChallengeCard({ challenge }: { challenge: { _id: string; goalDesc
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0.75rem", alignItems: "center", marginBottom: "1.25rem" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.375rem" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--claude)" }} />
-              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--ink)" }}>Claude</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.375rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--claude)" }} />
+                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--ink)" }}>Claude</span>
+              </div>
+              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--claude)" }}>{(claudePct * 100).toFixed(0)}%</span>
             </div>
             <div className="progress-track">
-              <div className="progress-fill-claude" style={{ width: "0%" }} />
+              <div className="progress-fill-claude" style={{ width: `${claudeProgress}%`, transition: "width 1s ease" }} />
             </div>
           </div>
           <div style={{ textAlign: "center", fontWeight: 800, fontSize: "0.875rem", color: "var(--ink-3)" }}>VS</div>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.375rem" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--openai)" }} />
-              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--ink)" }}>OpenAI</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.375rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--openai)" }} />
+                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--ink)" }}>OpenAI</span>
+              </div>
+              <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--openai)" }}>{(openaiPct * 100).toFixed(0)}%</span>
             </div>
             <div className="progress-track">
-              <div className="progress-fill-openai" style={{ width: "0%" }} />
+              <div className="progress-fill-openai" style={{ width: `${openaiProgress}%`, transition: "width 1s ease" }} />
             </div>
           </div>
         </div>
@@ -176,17 +218,22 @@ function ConvexChallengeCard({ challenge }: { challenge: { _id: string; goalDesc
   );
 }
 
+// ─── Main home page ───────────────────────────────────────────────────────────
 export default function HomeContent() {
+  // Live active challenges
   const activeChallenges = useQuery(api.challenges.listActive);
-  const firstActive = activeChallenges?.[0];
+  // All challenges ever — for sessions run count
+  const allChallenges = useQuery(api.challenges.list);
 
-  const hardcodedCount = 2;
-  const totalLive = (firstActive ? 1 : 0) + hardcodedCount;
+  const liveChallengeCount = (activeChallenges?.length ?? 0) + 2; // +2 for the two demo challenges
+  const sessionsRun = (allChallenges?.length ?? 0) + 2; // +2 for demo sessions
+
+  const firstActive = activeChallenges?.[0] as typeof activeChallenges extends Array<infer T> ? T : never | undefined;
 
   return (
     <div>
       <Nav authSlot={<><NavAuth /><AddFundsButton /></>} />
-      <HeroSection />
+      <HeroSection liveChallenges={liveChallengeCount} sessionsRun={sessionsRun} />
 
       <section style={{ padding: "0 0 5rem" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem" }}>
@@ -197,12 +244,12 @@ export default function HomeContent() {
             </div>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--red)" }} className="pulse-dot" />
-              <span style={{ fontSize: "0.875rem", color: "var(--ink-2)", fontWeight: 500 }}>{totalLive} races in progress</span>
+              <span style={{ fontSize: "0.875rem", color: "var(--ink-2)", fontWeight: 500 }}>{liveChallengeCount} races in progress</span>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: firstActive ? "repeat(3, 1fr)" : "1fr 1fr", gap: "1.5rem" }}>
             {firstActive && (
-              <ConvexChallengeCard challenge={firstActive as { _id: string; goalDescription: string; goalType: string; targetValue: number; sessionNumber: number; status: string }} />
+              <ConvexChallengeCard challenge={firstActive as any} />
             )}
             <ChallengeCard challenge={FOLLOWERS_CHALLENGE} href="/challenge/followers" />
             <ChallengeCard challenge={REVENUE_CHALLENGE} href="/challenge/revenue" />

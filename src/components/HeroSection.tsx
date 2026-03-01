@@ -9,15 +9,20 @@ const ASSETS = {
   badgeGemini: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-gemini-nobg_26ef172a.png",
 };
 
-export function HeroSection() {
-  const liveWatchers = 0;
+interface HeroSectionProps {
+  liveChallenges?: number;
+  sessionsRun?: number;
+}
 
+export function HeroSection({ liveChallenges = 0, sessionsRun = 0 }: HeroSectionProps) {
   return (
     <section style={{ padding: "5rem 0 4rem" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
         {/* Left: headline */}
         <div>
-          <div className="pill pill-live" style={{ marginBottom: "1.5rem" }}>0 live challenges · 0 watching</div>
+          <div className="pill pill-live" style={{ marginBottom: "1.5rem" }}>
+            {liveChallenges} live {liveChallenges === 1 ? "challenge" : "challenges"} · watching now
+          </div>
           <h1 className="display-xl" style={{ marginBottom: "1.5rem" }}>
             The ultimate agent benchmark,<br />
             <span style={{ color: "var(--purple)" }}>but with skin in the game.</span>
@@ -38,7 +43,7 @@ export function HeroSection() {
             {[
               { value: "$0", label: "Total Volume" },
               { value: "0", label: "Live Watchers" },
-              { value: "0", label: "Sessions Run" },
+              { value: sessionsRun.toLocaleString(), label: "Sessions Run" },
               { value: "$0", label: "Avg Pool Size" },
             ].map((s) => (
               <div key={s.label}>
