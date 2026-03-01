@@ -93,6 +93,9 @@ export default defineSchema({
     bettingOpen: v.boolean(),
     platformTake: v.optional(v.number()),
     challengeId: v.optional(v.id("challenges")),
+    aiClaudePct: v.optional(v.number()), // AI-assessed win probability for Claude (0-100)
+    aiOpenaiPct: v.optional(v.number()), // AI-assessed win probability for OpenAI (0-100)
+    oddsUpdatedAt: v.optional(v.number()), // timestamp of last AI odds update
   })
     .index("by_sandbox", ["sandboxId"])
     .index("by_challenge", ["challengeId"]),

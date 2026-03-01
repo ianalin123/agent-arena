@@ -72,13 +72,29 @@ export const writeOdds = internalMutation({
     eventLabel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Write to odds history
     await ctx.db.insert("oddsHistory", {
       challengeId: args.challengeId,
       claudePct: args.claudePct,
       openaiPct: args.openaiPct,
-      timestamp: Date.now(),
+      timestamp: now,
       ...(args.eventLabel ? { eventLabel: args.eventLabel } : {}),
     });
+
+    // Update bettingPool with AI-assessed odds so getOddsByChallenge can blend them
+    const pool = await ctx.db
+      .query("bettingPools")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .first();
+    if (pool) {
+      await ctx.db.patch(pool._id, {
+        aiClaudePct: args.claudePct,
+        aiOpenaiPct: args.openaiPct,
+        oddsUpdatedAt: now,
+      });
+    }
   },
 });
 
