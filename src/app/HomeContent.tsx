@@ -7,7 +7,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { Nav } from "@/components/Nav";
 import { NavAuth } from "@/components/NavAuth";
-import { AddFundsButton } from "@/components/AddFundsButton";
+import { LiveTicker } from "@/components/LiveTicker";
 import { HeroSection } from "@/components/HeroSection";
 import {
   FOLLOWERS_CHALLENGE,
@@ -232,7 +232,8 @@ export default function HomeContent() {
 
   return (
     <div>
-      <Nav authSlot={<><NavAuth /><AddFundsButton /></>} />
+      <Nav authSlot={<NavAuth />} />
+      <LiveTicker />
       <HeroSection liveChallenges={liveChallengeCount} sessionsRun={sessionsRun} />
 
       <section style={{ padding: "0 0 5rem" }}>

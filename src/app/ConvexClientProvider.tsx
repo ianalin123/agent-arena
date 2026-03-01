@@ -3,6 +3,7 @@
 import { ReactNode, useMemo } from "react";
 import { ConvexReactClient } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { GuestUserProvider } from "./GuestUserProvider";
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const convex = useMemo(() => {
@@ -14,6 +15,8 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
   if (!convex) return <>{children}</>;
 
   return (
-    <ConvexAuthProvider client={convex}>{children}</ConvexAuthProvider>
+    <ConvexAuthProvider client={convex}>
+      <GuestUserProvider>{children}</GuestUserProvider>
+    </ConvexAuthProvider>
   );
 }

@@ -8,7 +8,9 @@ export interface BetPanelProps {
   totalPool: number;
   viewers: number;
   bettingOpen: boolean;
-  onPlaceBet?: (agent: "claude" | "openai", amount: number) => void;
+  balance?: number;
+  onPlaceBet?: (agent: "claude" | "openai", amount: number) => Promise<void> | void;
+  onAddFunds?: (amountDollars: number) => Promise<void> | void;
 }
 
 export function BetPanel({
@@ -17,12 +19,15 @@ export function BetPanel({
   totalPool,
   viewers,
   bettingOpen,
+  balance,
   onPlaceBet,
+  onAddFunds,
 }: BetPanelProps) {
   const [selected, setSelected] = useState<"claude" | "openai" | null>(null);
   const MAX_BET = 500;
   const [amount, setAmount] = useState("10");
-  const [placed, setPlaced] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const claudeOdds = (100 / claudeWinPct).toFixed(2);
   const openaiOdds = (100 / openaiWinPct).toFixed(2);
@@ -30,13 +35,76 @@ export function BetPanel({
     ? (parseFloat(amount) * (selected === "claude" ? parseFloat(claudeOdds) : parseFloat(openaiOdds))).toFixed(2)
     : "0.00";
 
-  function handlePlace() {
-    if (!selected || !amount || !bettingOpen) return;
-    const capped = Math.min(parseFloat(amount), MAX_BET);
-    onPlaceBet?.(selected, capped);
-    setPlaced(true);
-    setTimeout(() => setPlaced(false), 3000);
+  const parsedAmount = parseFloat(amount);
+  const needsFunds = balance !== undefined && !isNaN(parsedAmount) && parsedAmount > 0 && balance < parsedAmount;
+
+  async function handlePlace() {
+    if (status === "loading") return;
+    if (!selected || !amount) {
+      setErrorMsg("Pick an agent and enter an amount.");
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+      return;
+    }
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setErrorMsg("Enter a valid amount.");
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+      return;
+    }
+
+    const capped = Math.min(parsedAmount, MAX_BET);
+
+    if (needsFunds && onAddFunds) {
+      setStatus("loading");
+      setErrorMsg("");
+      try {
+        await onAddFunds(capped);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Failed to open checkout";
+        setErrorMsg(msg);
+        setStatus("error");
+        setTimeout(() => setStatus("idle"), 4000);
+      }
+      return;
+    }
+
+    if (!onPlaceBet) {
+      setErrorMsg("Betting is not available.");
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+      return;
+    }
+    if (!bettingOpen) {
+      setErrorMsg("Betting is closed for this round.");
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+      return;
+    }
+
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      await onPlaceBet(selected, capped);
+      setStatus("success");
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Bet failed";
+      setErrorMsg(msg);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 4000);
+    }
   }
+
+  const canAct = selected && amount && parsedAmount > 0;
+  const isDisabled = status === "loading";
+
+  const buttonLabel =
+    status === "loading" ? (needsFunds ? "Opening checkout..." : "Placing bet...") :
+    status === "success" ? "Bet placed!" :
+    status === "error" ? "Failed" :
+    needsFunds ? `Add $${parsedAmount.toFixed(0)} to bet` :
+    `Bet on ${selected === "claude" ? "Claude" : selected === "openai" ? "OpenAI" : "..."}`;
 
   return (
     <div className="bet-panel">
@@ -51,7 +119,6 @@ export function BetPanel({
         <button
           className={`bet-option${selected === "claude" ? " selected-claude" : ""}`}
           onClick={() => setSelected("claude")}
-          disabled={!bettingOpen}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--claude)" }} />
@@ -65,7 +132,6 @@ export function BetPanel({
         <button
           className={`bet-option${selected === "openai" ? " selected-openai" : ""}`}
           onClick={() => setSelected("openai")}
-          disabled={!bettingOpen}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--openai)" }} />
@@ -79,7 +145,14 @@ export function BetPanel({
       </div>
 
       <div style={{ marginBottom: "1rem" }}>
-        <div className="text-label" style={{ marginBottom: "0.5rem" }}>Amount (USD)</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <span className="text-label">Amount (USD)</span>
+          {balance !== undefined && (
+            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: needsFunds ? "#e74c3c" : "var(--ink-3)" }}>
+              Balance: ${balance.toFixed(2)}
+            </span>
+          )}
+        </div>
         <input
           type="number"
           className="bet-amount-input"
@@ -92,17 +165,16 @@ export function BetPanel({
           placeholder="$0.00"
           min="1"
           max={MAX_BET}
-          disabled={!bettingOpen}
         />
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
           {["10", "25", "100", "500"].map((v) => (
-            <button key={v} className="quick-amount" onClick={() => setAmount(v)} disabled={!bettingOpen}>${v}</button>
+            <button key={v} className="quick-amount" onClick={() => setAmount(v)}>${v}</button>
           ))}
           <span style={{ fontSize: "0.75rem", color: "var(--ink-3)", alignSelf: "center", marginLeft: "0.25rem" }}>Max $500</span>
         </div>
       </div>
 
-      {selected && amount && (
+      {selected && amount && parsedAmount > 0 && (
         <div style={{ background: "var(--cream-2)", borderRadius: 10, padding: "0.75rem 1rem", marginBottom: "1rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
             <span style={{ fontSize: "0.8125rem", color: "var(--ink-3)" }}>Potential payout</span>
@@ -111,25 +183,46 @@ export function BetPanel({
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: "0.8125rem", color: "var(--ink-3)" }}>Profit if win</span>
             <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--ink-2)" }}>
-              +${(parseFloat(payout) - parseFloat(amount)).toFixed(2)}
+              +${(parseFloat(payout) - parsedAmount).toFixed(2)}
             </span>
           </div>
         </div>
       )}
 
       <button
+        type="button"
         className="btn-primary"
-        style={{ width: "100%", opacity: (!selected || !amount || !bettingOpen) ? 0.5 : 1 }}
-        onClick={handlePlace}
-        disabled={!selected || !amount || !bettingOpen}
+        style={{
+          width: "100%",
+          opacity: isDisabled ? 0.5 : 1,
+          cursor: isDisabled ? "not-allowed" : "pointer",
+          background:
+            status === "success" ? "var(--green)" :
+            status === "error" ? "#e74c3c" :
+            needsFunds && canAct ? "#7C6FF7" : undefined,
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handlePlace();
+        }}
+        disabled={isDisabled}
       >
-        {placed ? "✓ Bet placed!" : `Bet on ${selected === "claude" ? "Claude" : selected === "openai" ? "OpenAI" : "..."}`}
+        {buttonLabel}
       </button>
+
+      {status === "error" && errorMsg && (
+        <div style={{ marginTop: "0.5rem", fontSize: "0.8125rem", color: "#e74c3c", textAlign: "center" }}>
+          {errorMsg}
+        </div>
+      )}
 
       <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.375rem" }}>
           <span className="text-label">Total pool</span>
-          <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)" }}>${(totalPool / 1000).toFixed(1)}k</span>
+          <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)" }}>
+            ${totalPool >= 1000 ? (totalPool / 1000).toFixed(1) + "k" : totalPool.toFixed(0)}
+          </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span className="text-label">Watchers</span>

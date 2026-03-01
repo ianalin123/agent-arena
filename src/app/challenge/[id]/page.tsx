@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE } from "@/lib/arena-data";
 import { Nav } from "@/components/Nav";
 import { NavAuth } from "@/components/NavAuth";
+import { useGuestUser } from "../../GuestUserProvider";
 import { GoalBanner } from "@/components/GoalBanner";
 import { VMWindow } from "@/components/VMWindow";
 import { BetPanel } from "@/components/BetPanel";
@@ -149,6 +150,19 @@ function eventsToActions(events: Array<{ eventType: string; payload: string; tim
 }
 
 function DemoChallengePage({ id }: { id: string }) {
+  const { balance: guestBalance, email: guestEmail } = useGuestUser();
+  const createCheckout = useAction(api.stripeCheckout.createCheckout);
+
+  const handleAddFunds = async (amountDollars: number) => {
+    const { url } = await createCheckout({
+      amountDollars,
+      successUrl: window.location.href,
+      cancelUrl: window.location.href,
+      customerEmail: guestEmail,
+    });
+    window.location.href = url;
+  };
+
   const isFollowers = id === "followers";
   const challenge = isFollowers ? FOLLOWERS_CHALLENGE : REVENUE_CHALLENGE;
   const claudeActionsList = isFollowers ? CLAUDE_ACTIONS : REVENUE_CLAUDE_ACTIONS;
@@ -291,6 +305,8 @@ function DemoChallengePage({ id }: { id: string }) {
               totalPool={challenge.totalVolume}
               viewers={challenge.viewers}
               bettingOpen={true}
+              balance={guestBalance}
+              onAddFunds={handleAddFunds}
             />
           </div>
         </div>
@@ -315,6 +331,7 @@ function DemoChallengePage({ id }: { id: string }) {
 
 function ConvexChallengePage({ id }: { id: string }) {
   const challengeId = id as Id<"challenges">;
+  const { userId: guestUserId, balance: guestBalance, email: guestEmail } = useGuestUser();
 
   const challengeData = useQuery(api.challenges.get, { challengeId });
   const odds = useQuery(api.betting.getOddsByChallenge, { challengeId });
@@ -340,7 +357,8 @@ function ConvexChallengePage({ id }: { id: string }) {
     openaiSandboxId ? { sandboxId: openaiSandboxId } : "skip"
   );
 
-  const placeBet = useMutation(api.betting.placeBetOnChallenge);
+  const placeBet = useMutation(api.betting.placeBetAsGuest);
+  const createCheckout = useAction(api.stripeCheckout.createCheckout);
 
   const [timeElapsed, setTimeElapsed] = useState(0);
 
@@ -417,7 +435,18 @@ function ConvexChallengePage({ id }: { id: string }) {
     : [];
 
   const handlePlaceBet = async (agent: "claude" | "openai", amount: number) => {
-    await placeBet({ challengeId, amount, position: agent });
+    if (!guestUserId) throw new Error("Your session is loading. Please try again in a moment.");
+    await placeBet({ challengeId, amount, position: agent, userId: guestUserId });
+  };
+
+  const handleAddFunds = async (amountDollars: number) => {
+    const { url } = await createCheckout({
+      amountDollars,
+      successUrl: window.location.href,
+      cancelUrl: window.location.href,
+      customerEmail: guestEmail,
+    });
+    window.location.href = url;
   };
 
   return (
@@ -484,7 +513,9 @@ function ConvexChallengePage({ id }: { id: string }) {
               totalPool={totalPool}
               viewers={0}
               bettingOpen={bettingOpen}
+              balance={guestBalance}
               onPlaceBet={handlePlaceBet}
+              onAddFunds={handleAddFunds}
             />
           </div>
         </div>

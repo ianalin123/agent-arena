@@ -43,10 +43,23 @@ export const placeBet = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Must be signed in to place a bet");
 
-    const pool = await ctx.db
+    let pool = await ctx.db
       .query("bettingPools")
       .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
       .first();
+
+    if (!pool) {
+      await ctx.db.insert("bettingPools", {
+        sandboxId: args.sandboxId,
+        yesTotal: 0,
+        noTotal: 0,
+        bettingOpen: true,
+      });
+      pool = await ctx.db
+        .query("bettingPools")
+        .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+        .first();
+    }
 
     if (!pool || !pool.bettingOpen) {
       throw new Error("Betting is closed for this sandbox");
@@ -91,6 +104,85 @@ export const placeBet = mutation({
     await ctx.db.insert("bets", {
       sandboxId: args.sandboxId,
       userId,
+      amount: args.amount,
+      position: args.position,
+      oddsAtPlacement: newTotal / winningPool,
+      settled: false,
+      placedAt: Date.now(),
+    });
+  },
+});
+
+/** Place a bet on a sandbox using an explicit userId (guest/demo, no auth required). Deducts amount from that user's balance. */
+export const placeBetAsGuestForSandbox = mutation({
+  args: {
+    sandboxId: v.id("sandboxes"),
+    amount: v.number(),
+    position: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    let pool = await ctx.db
+      .query("bettingPools")
+      .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+      .first();
+
+    if (!pool) {
+      await ctx.db.insert("bettingPools", {
+        sandboxId: args.sandboxId,
+        yesTotal: 0,
+        noTotal: 0,
+        bettingOpen: true,
+      });
+      pool = await ctx.db
+        .query("bettingPools")
+        .withIndex("by_sandbox", (q) => q.eq("sandboxId", args.sandboxId))
+        .first();
+    }
+
+    if (!pool || !pool.bettingOpen) {
+      throw new Error("Betting is closed for this sandbox");
+    }
+
+    const sandbox = await ctx.db.get(args.sandboxId);
+    if (sandbox) {
+      const now = Date.now();
+      const elapsed = now - sandbox.createdAt;
+      const timeLimitMs = sandbox.timeLimit * 1000;
+      const progressPct =
+        sandbox.targetValue > 0
+          ? sandbox.currentProgress / sandbox.targetValue
+          : 0;
+      if (elapsed >= 0.8 * timeLimitMs || progressPct >= 0.9) {
+        await ctx.db.patch(pool._id, { bettingOpen: false });
+        throw new Error("Betting is closed for this sandbox");
+      }
+    }
+
+    const user = await ctx.db.get(args.userId);
+    if (!user || (user.balance ?? 0) < args.amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    await ctx.db.patch(args.userId, {
+      balance: (user.balance ?? 0) - args.amount,
+    });
+
+    const poolUpdate =
+      args.position === "yes"
+        ? { yesTotal: pool.yesTotal + args.amount }
+        : { noTotal: pool.noTotal + args.amount };
+    await ctx.db.patch(pool._id, poolUpdate);
+
+    const newTotal = pool.yesTotal + pool.noTotal + args.amount;
+    const winningPool =
+      args.position === "yes"
+        ? pool.yesTotal + args.amount
+        : pool.noTotal + args.amount;
+
+    await ctx.db.insert("bets", {
+      sandboxId: args.sandboxId,
+      userId: args.userId,
       amount: args.amount,
       position: args.position,
       oddsAtPlacement: newTotal / winningPool,
@@ -169,7 +261,7 @@ export const getOdds = query({
         yesPct: 0.5,
         noPct: 0.5,
         totalPool: 0,
-        bettingOpen: false,
+        bettingOpen: true,
       };
     }
     const totalPool = pool.yesTotal + pool.noTotal;
@@ -294,31 +386,44 @@ export const placeBetOnChallenge = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Must be signed in to place a bet");
 
-    const pool = await ctx.db
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) throw new Error("Challenge not found");
+
+    let pool = await ctx.db
       .query("bettingPools")
       .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
       .first();
 
+    if (!pool) {
+      await ctx.db.insert("bettingPools", {
+        sandboxId: challenge.claudeSandboxId,
+        yesTotal: 0,
+        noTotal: 0,
+        bettingOpen: true,
+        challengeId: args.challengeId,
+      });
+      pool = await ctx.db
+        .query("bettingPools")
+        .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+        .first();
+    }
+
     if (!pool || !pool.bettingOpen) {
       throw new Error("Betting is closed for this challenge");
     }
-
-    const challenge = await ctx.db.get(args.challengeId);
-    if (challenge) {
-      const claudeSandbox = await ctx.db.get(challenge.claudeSandboxId);
-      const openaiSandbox = await ctx.db.get(challenge.openaiSandboxId);
-      const claudeDone =
-        claudeSandbox &&
-        (claudeSandbox.status === "completed" ||
-          claudeSandbox.status === "failed");
-      const openaiDone =
-        openaiSandbox &&
-        (openaiSandbox.status === "completed" ||
-          openaiSandbox.status === "failed");
-      if (claudeDone && openaiDone) {
-        await ctx.db.patch(pool._id, { bettingOpen: false });
-        throw new Error("Betting is closed for this challenge");
-      }
+    const claudeSandbox = await ctx.db.get(challenge.claudeSandboxId);
+    const openaiSandbox = await ctx.db.get(challenge.openaiSandboxId);
+    const claudeDone =
+      claudeSandbox &&
+      (claudeSandbox.status === "completed" ||
+        claudeSandbox.status === "failed");
+    const openaiDone =
+      openaiSandbox &&
+      (openaiSandbox.status === "completed" ||
+        openaiSandbox.status === "failed");
+    if (claudeDone && openaiDone) {
+      await ctx.db.patch(pool._id, { bettingOpen: false });
+      throw new Error("Betting is closed for this challenge");
     }
 
     const user = await ctx.db.get(userId);
@@ -351,6 +456,96 @@ export const placeBetOnChallenge = mutation({
       sandboxId: sandboxId ?? (undefined as any),
       challengeId: args.challengeId,
       userId,
+      amount: args.amount,
+      position: args.position,
+      oddsAtPlacement: newTotal / winningPool,
+      settled: false,
+      placedAt: Date.now(),
+    });
+  },
+});
+
+/** Same as placeBetOnChallenge but accepts an explicit userId (for guest/demo mode). */
+export const placeBetAsGuest = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+    amount: v.number(),
+    position: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    let pool = await ctx.db
+      .query("bettingPools")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .first();
+
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) throw new Error("Challenge not found");
+
+    if (!pool) {
+      await ctx.db.insert("bettingPools", {
+        sandboxId: challenge.claudeSandboxId,
+        yesTotal: 0,
+        noTotal: 0,
+        bettingOpen: true,
+        challengeId: args.challengeId,
+      });
+      pool = await ctx.db
+        .query("bettingPools")
+        .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+        .first();
+    }
+
+    if (!pool || !pool.bettingOpen) {
+      throw new Error("Betting is closed for this challenge");
+    }
+    if (challenge) {
+      const claudeSandbox = await ctx.db.get(challenge.claudeSandboxId);
+      const openaiSandbox = await ctx.db.get(challenge.openaiSandboxId);
+      const claudeDone =
+        claudeSandbox &&
+        (claudeSandbox.status === "completed" ||
+          claudeSandbox.status === "failed");
+      const openaiDone =
+        openaiSandbox &&
+        (openaiSandbox.status === "completed" ||
+          openaiSandbox.status === "failed");
+      if (claudeDone && openaiDone) {
+        await ctx.db.patch(pool._id, { bettingOpen: false });
+        throw new Error("Betting is closed for this challenge");
+      }
+    }
+
+    const user = await ctx.db.get(args.userId);
+    if (!user || (user.balance ?? 0) < args.amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    await ctx.db.patch(args.userId, {
+      balance: (user.balance ?? 0) - args.amount,
+    });
+
+    const poolUpdate =
+      args.position === "claude"
+        ? { yesTotal: pool.yesTotal + args.amount }
+        : { noTotal: pool.noTotal + args.amount };
+    await ctx.db.patch(pool._id, poolUpdate);
+
+    const newTotal = pool.yesTotal + pool.noTotal + args.amount;
+    const winningPool =
+      args.position === "claude"
+        ? pool.yesTotal + args.amount
+        : pool.noTotal + args.amount;
+
+    const sandboxId =
+      args.position === "claude"
+        ? challenge?.claudeSandboxId
+        : challenge?.openaiSandboxId;
+
+    await ctx.db.insert("bets", {
+      sandboxId: sandboxId ?? (undefined as any),
+      challengeId: args.challengeId,
+      userId: args.userId,
       amount: args.amount,
       position: args.position,
       oddsAtPlacement: newTotal / winningPool,
@@ -425,7 +620,7 @@ export const getOddsByChallenge = query({
         claudePct: 0.5,
         openaiPct: 0.5,
         totalPool: 0,
-        bettingOpen: false,
+        bettingOpen: true,
       };
     }
     const totalPool = pool.yesTotal + pool.noTotal;

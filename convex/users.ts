@@ -66,7 +66,7 @@ export const ensureTestUser = mutation({
     return await ctx.db.insert("users", {
       name: args.name,
       email: args.email,
-      balance: 1000,
+      balance: 5,
     });
   },
 });
@@ -127,7 +127,7 @@ export const addToBalanceByEmail = internalMutation({
     if (args.amount <= 0) return;
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("email", (q) => q.eq("email", args.email))
       .first();
     if (!user) return;
     await ctx.db.patch(user._id, {

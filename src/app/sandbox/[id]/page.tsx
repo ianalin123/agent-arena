@@ -8,6 +8,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { Nav } from "@/components/Nav";
 import { NavAuth } from "@/components/NavAuth";
 import { VMWindow } from "@/components/VMWindow";
+import { useGuestUser } from "../../GuestUserProvider";
 
 function formatTimeRemaining(expiresAt: number): string {
   const diff = expiresAt - Date.now();
@@ -75,7 +76,10 @@ export default function SandboxDetailPage({ params }: { params: Promise<{ id: st
   const events = useQuery(api.events.listBySandbox, { sandboxId: id as Id<"sandboxes">, limit: 50 });
   const screenshot = useQuery(api.events.getLatestScreenshot, { sandboxId: id as Id<"sandboxes"> });
   const odds = useQuery(api.betting.getOdds, { sandboxId: id as Id<"sandboxes"> });
+  const currentUser = useQuery(api.users.currentUser);
+  const { userId: guestUserId, balance: guestBalance } = useGuestUser();
   const placeBet = useMutation(api.betting.placeBet);
+  const placeBetAsGuestForSandbox = useMutation(api.betting.placeBetAsGuestForSandbox);
 
   const [betPosition, setBetPosition] = useState<"yes" | "no" | null>(null);
   const [betAmount, setBetAmount] = useState("10");
@@ -129,13 +133,21 @@ export default function SandboxDetailPage({ params }: { params: Promise<{ id: st
   const sc = statusColor(sandbox.status);
   const screenshotUrl = screenshot?.url ?? null;
 
+  const balance = currentUser?.balance ?? guestBalance ?? 0;
+
   async function handlePlaceBet() {
     if (!betPosition || !betAmount) return;
     const amt = parseFloat(betAmount);
     if (isNaN(amt) || amt <= 0) return;
     setBetError(null);
     try {
-      await placeBet({ sandboxId: id as Id<"sandboxes">, amount: amt, position: betPosition });
+      if (currentUser?._id) {
+        await placeBet({ sandboxId: id as Id<"sandboxes">, amount: amt, position: betPosition });
+      } else if (guestUserId) {
+        await placeBetAsGuestForSandbox({ sandboxId: id as Id<"sandboxes">, amount: amt, position: betPosition, userId: guestUserId });
+      } else {
+        throw new Error("Sign in or refresh to place a bet");
+      }
       setBetPlaced(true);
       setTimeout(() => setBetPlaced(false), 3000);
     } catch (err: unknown) {
@@ -297,8 +309,13 @@ export default function SandboxDetailPage({ params }: { params: Promise<{ id: st
             {/* Betting Panel */}
             <div className="card-sm" style={{ padding: "1.25rem" }}>
               <div className="text-label" style={{ marginBottom: "0.375rem" }}>Place a Bet</div>
-              <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "var(--ink)", marginBottom: "1rem" }}>
-                Will this agent hit the goal?
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <div style={{ fontSize: "0.9375rem", fontWeight: 700, color: "var(--ink)" }}>
+                  Will this agent hit the goal?
+                </div>
+                <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--ink-3)" }}>
+                  Balance: ${balance.toFixed(2)}
+                </span>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem", marginBottom: "1rem" }}>
