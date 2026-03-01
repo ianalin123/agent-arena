@@ -21,4 +21,10 @@ crons.interval(
   internal.oddsHistory.snapshotAllActive
 );
 
+crons.interval(
+  "cleanup-stale-presence",
+  { seconds: 60 },
+  internal.presence.cleanupStale
+);
+
 export default crons;
