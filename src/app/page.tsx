@@ -18,7 +18,7 @@ import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE, UPCOMING_CHALLENGES } from "@/l
 // CDN URLs for all illustrated assets
 const ASSETS = {
   charsNobg:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
-  logoIcon:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-icon-only_35688216.png",
+  logoIcon:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-colour-nobg_3d345c23.png",
   armWrestle:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/scene-armwrestle_cf44b035.png",
   betChips:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-bet-chips_ed9eca5a.png",
   trophy:      "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png",

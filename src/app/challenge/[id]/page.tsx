@@ -23,7 +23,7 @@ import { FOLLOWERS_CHALLENGE, REVENUE_CHALLENGE } from "@/lib/arena-data";
 
 // CDN URLs for illustrated assets
 const ASSETS = {
-  logoIcon:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-icon-only_35688216.png",
+  logoIcon:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-colour-nobg_3d345c23.png",
   trophy:    "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png",
   betChips:  "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-bet-chips_ed9eca5a.png",
   chartUp:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-chart-up_23c5aab8.png",
