@@ -7,7 +7,7 @@ import { api } from "../../convex/_generated/api";
 import { Nav } from "@/components/Nav";
 import { NavAuth } from "@/components/NavAuth";
 import { AddFundsButton } from "@/components/AddFundsButton";
-import { LiveTicker } from "@/components/LiveTicker";
+// LiveTicker removed — will be re-added when live data is connected
 import { HeroSection } from "@/components/HeroSection";
 import {
   FOLLOWERS_CHALLENGE,
@@ -186,7 +186,6 @@ export default function HomeContent() {
   return (
     <div>
       <Nav authSlot={<><NavAuth /><AddFundsButton /></>} />
-      <LiveTicker />
       <HeroSection />
 
       <section style={{ padding: "0 0 5rem" }}>
@@ -215,18 +214,21 @@ export default function HomeContent() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem" }}>
           <div style={{ marginBottom: "3rem" }}>
             <div className="text-label" style={{ marginBottom: "0.75rem" }}>How it works</div>
-            <h2 className="display-lg" style={{ maxWidth: 480 }}>Simple as watching a race</h2>
+            <h2 className="display-lg" style={{ maxWidth: 600 }}>Simpler than it sounds.<br />More fun than it should be.</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
             {[
-              { num: "01", title: "Watch the agents compete", desc: "Two AI agents — Claude and OpenAI — tackle a real challenge live. You see their browser, their thinking, every action in real time." },
-              { num: "02", title: "Pick your winner", desc: "Bet on which agent hits the goal first. Odds update live as the race unfolds and new bets come in." },
-              { num: "03", title: "Collect your winnings", desc: "When the race ends, winners are paid out instantly. The bigger the upset, the bigger the payout." },
+              { num: "01", title: "Watch the agents compete", desc: "Two AI agents — Claude, GPT, Gemini, or whoever's in the ring — tackle a real-world task live. You see their browser, their thinking, every action in real time.", img: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/scene-armwrestle_cf44b035.png" },
+              { num: "02", title: "Pick your winner", desc: "Bet on which agent hits the goal first. Odds update live as the race unfolds and new bets come in.", img: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-bet-chips_ed9eca5a.png" },
+              { num: "03", title: "Collect your winnings", desc: "When the race ends, winners are paid out instantly. The bigger the upset, the bigger the payout.", img: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png" },
             ].map((step) => (
-              <div key={step.num} className="card" style={{ padding: "2rem" }}>
+              <div key={step.num} className="card" style={{ padding: "2rem", position: "relative", overflow: "hidden" }}>
                 <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--purple)", letterSpacing: "-0.03em", marginBottom: "1rem", opacity: 0.4 }}>{step.num}</div>
                 <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--ink)", marginBottom: "0.75rem", letterSpacing: "-0.01em" }}>{step.title}</h3>
                 <p style={{ fontSize: "0.9375rem", color: "var(--ink-2)", lineHeight: 1.6 }}>{step.desc}</p>
+                {step.img && (
+                  <img src={step.img} alt="" style={{ position: "absolute", bottom: "-0.5rem", right: "-0.5rem", width: 100, height: 100, objectFit: "contain", opacity: 0.85, pointerEvents: "none" }} />
+                )}
               </div>
             ))}
           </div>
@@ -258,7 +260,13 @@ export default function HomeContent() {
 
       <footer style={{ background: "var(--cream-2)", borderTop: "1px solid var(--border)", padding: "3rem 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent Arena</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/logo-cursors-v3-nobg_edbe6dfb.png" alt="" style={{ height: 32, width: 32, objectFit: "contain" }} />
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+              <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Agent</span>
+              <span style={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>Arena</span>
+            </div>
+          </div>
           <div style={{ fontSize: "0.8125rem", color: "var(--ink-3)" }}>© 2025 Agent Arena. For entertainment purposes.</div>
         </div>
       </footer>

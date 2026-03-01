@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 
+const CHART_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-chart-up_23c5aab8.png";
+
 export interface ProbabilityChartProps {
   chartData: Array<{ t: number; claude: number; openai: number }>;
 }
@@ -34,7 +36,10 @@ export function ProbabilityChart({ chartData }: ProbabilityChartProps) {
     <div className="card-sm" style={{ padding: "1.25rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <div>
-          <div className="text-label" style={{ marginBottom: "0.25rem" }}>Win probability</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.25rem" }}>
+            <img src={CHART_ICON} alt="" style={{ height: 20, width: 20, objectFit: "contain" }} />
+            <div className="text-label">Win probability</div>
+          </div>
           <div style={{ display: "flex", gap: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
               <div style={{ width: 12, height: 3, background: "var(--claude)", borderRadius: 2 }} />

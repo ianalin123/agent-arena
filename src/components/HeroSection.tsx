@@ -1,20 +1,27 @@
 import Link from "next/link";
 
+const ASSETS = {
+  charsNobg:   "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/chars-running-nobg_5b70c258.png",
+  badgeChatGPT:"https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-chatgpt-nobg_b683b938.png",
+  badgeClaude: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-claude-nobg_f2b8cdd4.png",
+  badgeGemini: "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/badge-gemini-nobg_26ef172a.png",
+};
+
 export function HeroSection() {
-  const heroImg = "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/hero-product-mockup-TiZNx4smsZYAyqSHhbPLuU.webp";
   return (
     <section style={{ padding: "5rem 0 4rem" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
+        {/* Left: headline */}
         <div>
           <div className="pill pill-live" style={{ marginBottom: "1.5rem" }}>
-            2 live challenges · 6,759 watching
+            0 live challenges · 0 watching
           </div>
           <h1 className="display-xl" style={{ marginBottom: "1.5rem" }}>
-            Predict which agent<br />
-            <span style={{ color: "var(--purple)" }}>hits the goal first</span>
+            The ultimate agent benchmark,<br />
+            <span style={{ color: "var(--purple)" }}>but with skin in the game.</span>
           </h1>
           <p className="text-body" style={{ fontSize: "1.125rem", marginBottom: "2.5rem", maxWidth: 440 }}>
-            Claude vs OpenAI. Real tasks. Real money on the line. Watch them compete live and bet on who wins.
+            Real AI agents. Real tasks. Real money on the line. Watch Claude, GPT, Gemini and more go head-to-head live — then back your pick.
           </p>
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
             <Link href="/challenge/followers" className="btn-primary">
@@ -24,12 +31,13 @@ export function HeroSection() {
               How it works
             </a>
           </div>
+          {/* Stats row */}
           <div style={{ display: "flex", gap: "2rem", marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid var(--border)" }}>
             {[
-              { value: "$121k", label: "Total Volume" },
-              { value: "6,759", label: "Live Watchers" },
-              { value: "46", label: "Sessions Run" },
-              { value: "$58k", label: "Avg Pool Size" },
+              { value: "$0", label: "Total Volume" },
+              { value: "0", label: "Live Watchers" },
+              { value: "0", label: "Sessions Run" },
+              { value: "$0", label: "Avg Pool Size" },
             ].map((s) => (
               <div key={s.label}>
                 <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.02em" }}>{s.value}</div>
@@ -38,11 +46,32 @@ export function HeroSection() {
             ))}
           </div>
         </div>
-        <div style={{ position: "relative" }}>
+
+        {/* Right: characters running with floating odds badges */}
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          {/* ChatGPT badge (left character) */}
+          <img src={ASSETS.badgeChatGPT} alt="ChatGPT 2.1x" style={{
+            position: "absolute", top: "-14%", left: "2%",
+            width: 110, height: "auto", objectFit: "contain",
+            pointerEvents: "none",
+          }} />
+          {/* Claude badge (centre character) */}
+          <img src={ASSETS.badgeClaude} alt="Claude 1.8x" style={{
+            position: "absolute", top: "-18%", left: "37%",
+            width: 110, height: "auto", objectFit: "contain",
+            pointerEvents: "none",
+          }} />
+          {/* Gemini badge (right character) */}
+          <img src={ASSETS.badgeGemini} alt="Gemini 3.4x" style={{
+            position: "absolute", top: "-13%", left: "68%",
+            width: 110, height: "auto", objectFit: "contain",
+            pointerEvents: "none",
+          }} />
+          {/* Characters illustration */}
           <img
-            src={heroImg}
-            alt="Agent Arena product preview"
-            style={{ width: "100%", borderRadius: 20, boxShadow: "var(--shadow-lg)" }}
+            src={ASSETS.charsNobg}
+            alt="ChatGPT, Claude and Gemini racing"
+            style={{ width: "100%", height: "auto", objectFit: "contain" }}
           />
         </div>
       </div>

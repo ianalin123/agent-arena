@@ -1,3 +1,5 @@
+const TROPHY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663059134276/eTTikoaxRiKvzwgWkfvqus/deco-trophy-NdetxUiovS6DTBvAMyCoXJ.png";
+
 export interface SessionStatsProps {
   sessionNumber: number;
   viewers: number;
@@ -31,8 +33,11 @@ export function SessionStats({
   ];
 
   return (
-    <div className="card-sm" style={{ padding: "1.25rem" }}>
-      <div className="text-label" style={{ marginBottom: "0.875rem" }}>Session stats</div>
+    <div className="card-sm" style={{ padding: "1.25rem", position: "relative", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.875rem" }}>
+        <img src={TROPHY_ICON} alt="" style={{ height: 22, width: 22, objectFit: "contain" }} />
+        <div className="text-label">Session stats</div>
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
         {rows.map((s) => (
           <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
