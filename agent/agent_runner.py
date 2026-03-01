@@ -89,15 +89,29 @@ async def run_agent(sandbox_config: dict):
 
     try:
         while credits > 0 and not verifier.goal_achieved and not verifier.time_expired:
-            emails = await mail.check_inbox()
-            balance = await payments.get_balance()
+            emails_task = mail.check_inbox()
+            balance_task = payments.get_balance()
+            prompts_task = _fetch_pending_prompts(sandbox_id)
+
+            emails, balance, user_prompts = await asyncio.gather(
+                emails_task, balance_task, prompts_task,
+                return_exceptions=True,
+            )
+
+            if isinstance(emails, BaseException):
+                logger.warning("check_inbox failed: %s", emails)
+                emails = []
+            if isinstance(balance, BaseException):
+                logger.warning("get_balance failed: %s", balance)
+                balance = 0.0
+            if isinstance(user_prompts, BaseException):
+                logger.warning("fetch_prompts failed: %s", user_prompts)
+                user_prompts = []
 
             past_context = memory.search(
                 query=f"strategies for {sandbox_config.get('goal_type', 'general')}",
                 sandbox_id=sandbox_id,
             )
-
-            user_prompts = await _fetch_pending_prompts(sandbox_id)
 
             for prompt_data in user_prompts:
                 memory.add_user_prompt(
@@ -108,10 +122,22 @@ async def run_agent(sandbox_config: dict):
             stuck_hint = _detect_loop(recent_actions)
             screenshot = ""
 
+            await _push_event(sandbox_id, {
+                "step": len(recent_actions) + 1,
+                "status": "thinking",
+            }, event_type="status")
+
             decision = await _think_step_with_fallback(
                 fallback_chain, goal, screenshot, emails, balance,
                 past_context, user_prompts, recent_actions, stuck_hint,
             )
+
+            await _push_event(sandbox_id, {
+                "step": len(recent_actions) + 1,
+                "status": "executing",
+                "action_type": decision.action_type,
+                "action_summary": str(decision.action.get("task", decision.action))[:120] if isinstance(decision.action, dict) else str(decision.action)[:120],
+            }, event_type="status")
 
             result = await _execute_action(decision, browser, mail, payments, sandbox_id)
 

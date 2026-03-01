@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 
 interface BrowserStreamProps {
   sandboxId: string;
@@ -11,9 +11,18 @@ interface BrowserStreamProps {
 
 export function BrowserStream({ sandboxId, events = [], liveUrl, shareUrl }: BrowserStreamProps) {
   const streamUrl = shareUrl || liveUrl;
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoaded(true);
+  }, []);
+
+  const handleIframeError = useCallback(() => {
+    setIframeError(true);
+  }, []);
 
   const latestScreenshot = useMemo(() => {
-    if (streamUrl) return null;
     const screenshotEvents = events.filter(
       (e: any) => e.eventType === "screenshot"
     );
@@ -26,35 +35,45 @@ export function BrowserStream({ sandboxId, events = [], liveUrl, shareUrl }: Bro
     } catch {
       return null;
     }
-  }, [events, streamUrl]);
+  }, [events]);
+
+  const showIframe = streamUrl && !iframeError;
+  const showScreenshot = !showIframe && latestScreenshot;
+  const showPlaceholder = !showIframe && !showScreenshot;
+
+  const isLive = streamUrl && iframeLoaded && !iframeError;
 
   return (
     <div className="rounded-xl border border-border bg-bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`w-2.5 h-2.5 rounded-full ${streamUrl ? "bg-accent-green" : "bg-yellow-500"} animate-pulse`} />
+          <div className={`w-2.5 h-2.5 rounded-full ${isLive ? "bg-accent-green" : latestScreenshot ? "bg-yellow-500" : "bg-text-muted"} animate-pulse`} />
           <h3 className="text-sm font-medium">Live Browser Stream</h3>
         </div>
         <span className="text-xs text-text-muted">
-          {streamUrl ? "Live via Browser Use" : "~3s refresh"}
+          {isLive ? "Live via Browser Use" : latestScreenshot ? "Screenshots" : "Connecting…"}
         </span>
       </div>
 
       <div className="aspect-video bg-bg-primary relative flex items-center justify-center">
-        {streamUrl ? (
+        {showIframe && (
           <iframe
             src={streamUrl}
             className="w-full h-full border-0"
             allow="autoplay"
             title="Agent browser live stream"
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
           />
-        ) : latestScreenshot ? (
+        )}
+        {showScreenshot && (
           <img
             src={`data:image/png;base64,${latestScreenshot}`}
             alt="Agent browser view"
             className="w-full h-full object-contain transition-opacity duration-300"
           />
-        ) : (
+        )}
+        {showPlaceholder && (
           <div className="text-center p-8">
             <div className="w-16 h-16 rounded-full bg-bg-tertiary mx-auto mb-3 flex items-center justify-center">
               <svg
